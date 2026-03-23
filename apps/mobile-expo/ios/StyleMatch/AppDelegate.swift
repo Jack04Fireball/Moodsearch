@@ -616,19 +616,20 @@ struct PrototypeRootView: View {
 
   var body: some View {
     NavigationStack {
-      ScrollView {
-        VStack(alignment: .leading, spacing: 14) {
-          Text("Wireframe Build 4")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-          if store.setupStep != .done {
-            setupFlow
-          } else {
-            appFlow
+      Group {
+        if store.setupStep != .done {
+          ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+              Text("Wireframe Build 5")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+              setupFlow
+            }
+            .padding(16)
           }
+        } else {
+          appFlow
         }
-        .padding(16)
       }
       .navigationTitle("StyleMatch Prototype")
       .sheet(item: $store.selectedProduct) { product in
@@ -691,24 +692,10 @@ struct PrototypeRootView: View {
 
     case .preferences:
       Text("Preferences").font(.title2).bold()
-      Text("Brands are used as focus (boost), not as strict exclusion.")
       Text("Designer focus is set later per moodboard in moodboard settings.")
 
       TextField("Size profile", text: $store.sizeProfile)
         .textFieldStyle(.roundedBorder)
-
-      Text("Brand focus (multi-select)").bold()
-      ForEach(store.availableBrands, id: \.self) { brand in
-        Button {
-          store.toggleBrandFocus(brand)
-        } label: {
-          HStack {
-            Text(store.selectedBrandFocus.contains(brand) ? "[x]" : "[ ]")
-            Text(brand)
-            Spacer()
-          }
-        }
-      }
 
       Text("Price range: CHF \(Int(store.priceMin)) - \(Int(store.priceMax))").bold()
       Text("From")
@@ -754,55 +741,69 @@ struct PrototypeRootView: View {
     }
   }
 
-  @ViewBuilder
   private var appFlow: some View {
-    Text("StyleMatch").font(.title2).bold()
-    complianceCard
+    ScrollView {
+      LazyVStack(alignment: .leading, spacing: 14, pinnedViews: [.sectionHeaders]) {
+        Section {
+          VStack(alignment: .leading, spacing: 14) {
+            Text("Wireframe Build 5")
+              .font(.caption)
+              .foregroundStyle(.secondary)
 
-    HStack {
-      Button(store.mainTab == .home ? "[Home]" : "Home") { store.mainTab = .home }
-      Button(store.mainTab == .moodboards ? "[Moodboards]" : "Moodboards") { store.mainTab = .moodboards }
-      Button(store.mainTab == .archive ? "[Archive]" : "Archive") { store.mainTab = .archive }
-    }
-
-    switch store.mainTab {
-    case .home:
-      homeTab
-    case .moodboards:
-      moodboardsTab
-    case .archive:
-      archiveTab
+            switch store.mainTab {
+            case .home:
+              homeTab
+            case .moodboards:
+              moodboardsTab
+            case .archive:
+              archiveTab
+            }
+          }
+          .padding(.horizontal, 16)
+          .padding(.top, 8)
+          .padding(.bottom, 16)
+        } header: {
+          stickyTabHeader
+        }
+      }
     }
   }
 
-  @ViewBuilder
-  private var complianceCard: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text("Pinterest API Compliance")
-        .font(.headline)
-      Text("These rules are applied to this prototype and must stay active in production.")
-        .font(.caption)
-        .foregroundStyle(.secondary)
-
-      ForEach(store.complianceRules, id: \.self) { rule in
-        Text("• \(rule)")
-          .font(.caption)
+  private var stickyTabHeader: some View {
+    HStack(spacing: 8) {
+      tabHeaderButton(title: "Home", isActive: store.mainTab == .home) {
+        store.mainTab = .home
       }
-
-      if !store.hasAcceptedCompliance {
-        Button("I understand and will follow these rules") {
-          store.acknowledgeCompliance()
-        }
-        .padding(.top, 4)
-      } else {
-        Text("Compliance acknowledged for this session.")
-          .font(.caption)
-          .foregroundStyle(.secondary)
+      tabHeaderButton(title: "Moodboards", isActive: store.mainTab == .moodboards) {
+        store.mainTab = .moodboards
+      }
+      tabHeaderButton(title: "Archive", isActive: store.mainTab == .archive) {
+        store.mainTab = .archive
       }
     }
-    .padding(12)
-    .background(Color(.systemGray6))
-    .clipShape(RoundedRectangle(cornerRadius: 12))
+    .padding(.horizontal, 16)
+    .padding(.vertical, 10)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(Color(.systemBackground))
+    .overlay(alignment: .bottom) {
+      Rectangle()
+        .fill(Color(.systemGray4))
+        .frame(height: 1)
+    }
+  }
+
+  private func tabHeaderButton(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Text(title)
+        .font(.title3)
+        .bold()
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(isActive ? Color(.systemGray4) : Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .foregroundStyle(.primary)
+    }
+    .buttonStyle(.plain)
   }
 
   @ViewBuilder
@@ -834,19 +835,6 @@ struct PrototypeRootView: View {
   @ViewBuilder
   private var homeTab: some View {
     Text("Home: all new offers").font(.headline)
-    Text("Brand focus: boosts ranking, does not exclude other products.")
-      .font(.caption)
-      .foregroundStyle(.secondary)
-
-    ScrollView(.horizontal) {
-      HStack {
-        ForEach(store.availableBrands, id: \.self) { brand in
-          Button(store.selectedBrandFocus.contains(brand) ? "[\(brand)]" : brand) {
-            store.toggleBrandFocus(brand)
-          }
-        }
-      }
-    }
 
     boardFilterBar
 
@@ -881,13 +869,16 @@ struct PrototypeRootView: View {
           store.selectedMoodboard = board
         } label: {
           VStack(alignment: .leading, spacing: 8) {
-            WireframeImageBlock(height: 170, cornerRadius: 12, label: "Moodboard")
+            WireframeImageBlock(height: 124, cornerRadius: 12, label: "Moodboard Cover")
+            HStack(spacing: 8) {
+              WireframeImageBlock(height: 124, cornerRadius: 10, label: "Pin")
+                .frame(maxWidth: .infinity)
+              WireframeImageBlock(height: 124, cornerRadius: 10, label: "Pin")
+                .frame(maxWidth: .infinity)
+            }
 
             Text(board.name).bold()
               .lineLimit(2)
-            Text("Bought: \(store.boughtProducts(for: board).count)")
-              .font(.caption)
-              .foregroundStyle(.secondary)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(8)
@@ -896,7 +887,7 @@ struct PrototypeRootView: View {
             RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.3), lineWidth: 1)
           )
           .contentShape(Rectangle())
-          .frame(minHeight: 250)
+          .frame(minHeight: 300)
         }
         .buttonStyle(.plain)
       }
