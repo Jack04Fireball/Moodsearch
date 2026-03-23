@@ -7,8 +7,6 @@ enum SetupStep {
   case intro3
   case login
   case boards
-  case preferences
-  case analyzing
   case done
 }
 
@@ -72,6 +70,41 @@ struct WireframeImageBlock: View {
   }
 }
 
+struct SwipeableCard<Content: View>: View {
+  let onTap: () -> Void
+  let onSwipeLeft: () -> Void
+  let onSwipeRight: () -> Void
+  @ViewBuilder let content: () -> Content
+
+  @State private var dragOffset: CGFloat = 0
+
+  var body: some View {
+    content()
+      .offset(x: dragOffset)
+      .simultaneousGesture(
+        TapGesture().onEnded {
+          onTap()
+        }
+      )
+      .gesture(
+        DragGesture(minimumDistance: 16)
+          .onChanged { value in
+            dragOffset = max(-120, min(120, value.translation.width))
+          }
+          .onEnded { value in
+            if value.translation.width <= -80 {
+              onSwipeLeft()
+            } else if value.translation.width >= 80 {
+              onSwipeRight()
+            }
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+              dragOffset = 0
+            }
+          }
+      )
+  }
+}
+
 final class PrototypeStore: ObservableObject {
   @Published var setupStep: SetupStep = .intro1
   @Published var mainTab: MainTab = .home
@@ -99,6 +132,7 @@ final class PrototypeStore: ObservableObject {
 
   @Published var archivedProductIDs: Set<UUID> = []
   @Published var boughtProductIDs: Set<UUID> = []
+  @Published var likedProductIDs: Set<UUID> = []
   @Published var hasAcceptedCompliance: Bool = false
 
   let availableDesigners: [String]
@@ -313,17 +347,8 @@ final class PrototypeStore: ObservableObject {
 
   func continueFromBoards() {
     if selectedBoardIDs.count >= 1 {
-      setupStep = .preferences
+      setupStep = .done
     }
-  }
-
-  func startAnalysis() {
-    setupStep = .analyzing
-  }
-
-  func finishAnalysis() {
-    setupStep = .done
-    mainTab = .home
   }
 
   func resetAll() {
@@ -348,6 +373,7 @@ final class PrototypeStore: ObservableObject {
     selectedMoodboard = nil
     archivedProductIDs = []
     boughtProductIDs = []
+    likedProductIDs = []
     hasAcceptedCompliance = false
   }
 
@@ -388,6 +414,12 @@ final class PrototypeStore: ObservableObject {
 
   func archiveFromHomeSwipe(_ product: Product) {
     archivedProductIDs.insert(product.id)
+    likedProductIDs.remove(product.id)
+  }
+
+  func likeFromHomeSwipe(_ product: Product) {
+    likedProductIDs.insert(product.id)
+    archivedProductIDs.remove(product.id)
   }
 
   func toggleBought(_ product: Product) {
@@ -396,6 +428,18 @@ final class PrototypeStore: ObservableObject {
     } else {
       boughtProductIDs.insert(product.id)
     }
+  }
+
+  var archivedProductsForCurrentFilter: [Product] {
+    allProducts.filter { product in
+      guard archivedProductIDs.contains(product.id) else { return false }
+      guard selectedBoardIDs.contains(product.boardID) else { return false }
+      if let activeBoardFilter, product.boardID != activeBoardFilter {
+        return false
+      }
+      return true
+    }
+    .sorted { score(for: $0) > score(for: $1) }
   }
 
   func toggleBrandFocus(_ name: String) {
@@ -894,56 +938,10 @@ struct PrototypeRootView: View {
       }
 
       Text("Selected: \(store.selectedBoardIDs.count)")
-      Button("Continue") {
+      Button("Tap to get started") {
         store.continueFromBoards()
       }
       .disabled(store.selectedBoardIDs.isEmpty)
-
-    case .preferences:
-      Text("Preferences").font(.title2).bold()
-      Text("Designer focus is set later per moodboard in moodboard settings.")
-
-      TextField("Size profile", text: $store.sizeProfile)
-        .textFieldStyle(.roundedBorder)
-
-      Text("Price range: CHF \(Int(store.priceMin)) - \(Int(store.priceMax))").bold()
-      Text("From")
-      Slider(
-        value: Binding(
-          get: { store.priceMin },
-          set: { store.priceMin = min($0, store.priceMax) }
-        ),
-        in: 0...5000,
-        step: 10
-      )
-
-      Text("To")
-      Slider(
-        value: Binding(
-          get: { store.priceMax },
-          set: { store.priceMax = max($0, store.priceMin) }
-        ),
-        in: 0...5000,
-        step: 10
-      )
-
-      HStack {
-        Button("Preset 200-2000") {
-          store.priceMin = 200
-          store.priceMax = 2000
-        }
-
-        Button("Start Analysis") {
-          store.startAnalysis()
-        }
-      }
-
-    case .analyzing:
-      Text("Analyzing Moodboards").font(.title2).bold()
-      Text("Prototype step: pins are analyzed and first products are found.")
-      Button("Open App") {
-        store.finishAnalysis()
-      }
 
     case .done:
       EmptyView()
@@ -1046,19 +1044,13 @@ struct PrototypeRootView: View {
     }
 
     ForEach(store.homeProducts) { product in
-      homeProductCard(product)
-        .contentShape(Rectangle())
-        .onTapGesture {
-          store.selectedProduct = product
-        }
-        .simultaneousGesture(
-          DragGesture(minimumDistance: 24)
-            .onEnded { value in
-              if value.translation.width < -80 {
-                store.archiveFromHomeSwipe(product)
-              }
-            }
-        )
+      SwipeableCard(
+        onTap: { store.selectedProduct = product },
+        onSwipeLeft: { store.archiveFromHomeSwipe(product) },
+        onSwipeRight: { store.likeFromHomeSwipe(product) }
+      ) {
+        homeProductCard(product)
+      }
     }
   }
 
@@ -1124,7 +1116,7 @@ struct PrototypeRootView: View {
         .frame(width: visualWidth, alignment: .leading)
 
         VStack(alignment: .leading, spacing: 4) {
-          Text("NEW")
+          Text(store.likedProductIDs.contains(product.id) ? "LIKED" : "NEW")
             .font(.caption)
             .bold()
             .foregroundStyle(.secondary)
@@ -1158,31 +1150,51 @@ struct PrototypeRootView: View {
 
   @ViewBuilder
   private var archiveTab: some View {
-    Text("Archive").font(.headline)
     boardFilterBar
 
-    if store.visibleBoardsForTabs.isEmpty {
-      Text("No moodboards for current filter.")
+    if store.archivedProductsForCurrentFilter.isEmpty {
+      Text("No archived products for current filter.")
     }
 
-    ForEach(store.visibleBoardsForTabs) { board in
-      VStack(alignment: .leading, spacing: 4) {
-        Text(board.name).bold()
-        let archived = store.archivedProducts(for: board)
-        if archived.isEmpty {
-          Text("No archived products.")
-        } else {
-          ForEach(archived) { product in
-            Text("- \(product.title)")
-          }
+    ForEach(store.archivedProductsForCurrentFilter) { product in
+      archiveProductCard(product)
+        .onTapGesture {
+          store.selectedProduct = product
         }
+    }
+  }
+
+  private func archiveProductCard(_ product: Product) -> some View {
+    GeometryReader { proxy in
+      let cardHeight: CGFloat = 152
+      let imageWidth = max(160, proxy.size.width * 0.66)
+      let textWidth = max(100, proxy.size.width - imageWidth - 12)
+
+      HStack(spacing: 10) {
+        WireframeImageBlock(width: imageWidth, height: cardHeight, cornerRadius: 10, label: "Archived")
+
+        VStack(alignment: .leading, spacing: 6) {
+          Text(product.title)
+            .font(.subheadline)
+            .bold()
+            .lineLimit(2)
+          Text("CHF \(product.priceCHF)")
+            .font(.subheadline)
+          Text(store.boardName(for: product.boardID))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .frame(width: textWidth, alignment: .leading)
       }
+      .frame(height: cardHeight)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(10)
+      .padding(8)
+      .background(Color(.systemBackground))
       .overlay(
-        RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.4), lineWidth: 1)
+        RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.35), lineWidth: 1)
       )
     }
+    .frame(height: 170)
   }
 
 }
