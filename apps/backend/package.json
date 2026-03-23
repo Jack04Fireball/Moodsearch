@@ -1,0 +1,22 @@
+{
+  "name": "@stylematch/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "./node_modules/.bin/tsx src/server.ts",
+    "start": "./node_modules/.bin/tsx src/server.ts",
+    "typecheck": "./node_modules/.bin/tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'lint backend'"
+  },
+  "dependencies": {
+    "@stylematch/ai-core": "workspace:*",
+    "@stylematch/search-core": "workspace:*",
+    "@stylematch/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  }
+}

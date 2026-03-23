@@ -22,3 +22,9 @@ This repository now applies core Pinterest Developer/API rules to product behavi
 
 - iOS prototype source: `apps/mobile-expo/ios/StyleMatch/AppDelegate.swift`
 - Style ranking scaffold: `apps/mobile-expo/src/styleFilterEngine.ts`
+
+## Backend API
+
+- Backend source: `apps/backend/src/server.ts`
+- Start backend: `pnpm --filter @stylematch/backend start`
+- Health check: `GET http://<your-mac-ip>:4000/health`

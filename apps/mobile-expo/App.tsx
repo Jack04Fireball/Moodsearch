@@ -1,6 +1,8 @@
 import { StatusBar } from "expo-status-bar";
+import * as WebBrowser from "expo-web-browser";
 import { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Pressable,
@@ -12,6 +14,8 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { API_BASE_URL } from "./src/config";
+import type { PinterestBoard } from "@stylematch/shared-types";
 
 type FlowStage = "intro" | "connect" | "boards" | "setup" | "analyzing" | "app";
 type MainTab = "home" | "moodboards" | "archive";
@@ -67,7 +71,7 @@ const INTRO_SLIDES = [
   "You can start from zero every time and test the full journey.",
 ];
 
-const BOARDS: Moodboard[] = [
+const SEED_BOARDS: Moodboard[] = [
   { id: "b1", name: "City Minimal", pinCount: 124 },
   { id: "b2", name: "Quiet Luxury", pinCount: 92 },
   { id: "b3", name: "Street Layering", pinCount: 151 },
@@ -79,7 +83,7 @@ const BOARDS: Moodboard[] = [
 const OFFERS: Offer[] = [
   {
     id: "o1",
-    boardId: "b1",
+    boardId: "board_minimal",
     title: "Relaxed Wool Coat",
     brand: "COS",
     designer: "Lemaire",
@@ -90,7 +94,7 @@ const OFFERS: Offer[] = [
   },
   {
     id: "o2",
-    boardId: "b1",
+    boardId: "board_minimal",
     title: "Straight Pleated Pant",
     brand: "Arket",
     designer: "Jil Sander",
@@ -101,7 +105,7 @@ const OFFERS: Offer[] = [
   },
   {
     id: "o3",
-    boardId: "b2",
+    boardId: "board_minimal",
     title: "Leather Loafer",
     brand: "Aeyde",
     designer: "The Row",
@@ -112,7 +116,7 @@ const OFFERS: Offer[] = [
   },
   {
     id: "o4",
-    boardId: "b2",
+    boardId: "board_minimal",
     title: "Silk Blend Shirt",
     brand: "Toteme",
     designer: "Phoebe Philo",
@@ -123,7 +127,7 @@ const OFFERS: Offer[] = [
   },
   {
     id: "o5",
-    boardId: "b3",
+    boardId: "board_punk",
     title: "Oversized Bomber",
     brand: "Acne Studios",
     designer: "Demna",
@@ -134,7 +138,7 @@ const OFFERS: Offer[] = [
   },
   {
     id: "o6",
-    boardId: "b3",
+    boardId: "board_punk",
     title: "Utility Trouser",
     brand: "Weekday",
     designer: "Martine Rose",
@@ -145,7 +149,7 @@ const OFFERS: Offer[] = [
   },
   {
     id: "o7",
-    boardId: "b4",
+    boardId: "board_punk",
     title: "Double Blazer",
     brand: "Massimo Dutti",
     designer: "Haider Ackermann",
@@ -156,7 +160,7 @@ const OFFERS: Offer[] = [
   },
   {
     id: "o8",
-    boardId: "b4",
+    boardId: "board_punk",
     title: "Merino Turtleneck",
     brand: "Uniqlo",
     designer: "Dries Van Noten",
@@ -167,7 +171,7 @@ const OFFERS: Offer[] = [
   },
   {
     id: "o9",
-    boardId: "b5",
+    boardId: "board_street",
     title: "Evening Heel",
     brand: "Amina Muaddi",
     designer: "Tom Ford",
@@ -178,7 +182,7 @@ const OFFERS: Offer[] = [
   },
   {
     id: "o10",
-    boardId: "b6",
+    boardId: "board_street",
     title: "Heavy Cotton Tee",
     brand: "Sunspel",
     designer: "Margiela",
@@ -189,7 +193,7 @@ const OFFERS: Offer[] = [
   },
   {
     id: "o11",
-    boardId: "b6",
+    boardId: "board_street",
     title: "Clean Sneaker",
     brand: "Common Projects",
     designer: "Hedi Slimane",
@@ -200,7 +204,7 @@ const OFFERS: Offer[] = [
   },
   {
     id: "o12",
-    boardId: "b5",
+    boardId: "board_street",
     title: "Sharp Velvet Jacket",
     brand: "Saint Laurent",
     designer: "Vaccarello",
@@ -231,6 +235,8 @@ const BRAND_SUGGESTIONS = [
   "Uniqlo",
   "Saint Laurent",
 ];
+
+WebBrowser.maybeCompleteAuthSession();
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -284,17 +290,24 @@ export default function App() {
 
   const [openedMoodboardId, setOpenedMoodboardId] = useState<string | null>(null);
   const [customDesigner, setCustomDesigner] = useState("");
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [authUsername, setAuthUsername] = useState<string | null>(null);
+  const [isConnectingPinterest, setIsConnectingPinterest] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
+  const [connectedBoards, setConnectedBoards] = useState<Moodboard[]>([]);
+
+  const activeBoards = connectedBoards.length > 0 ? connectedBoards : SEED_BOARDS;
 
   const selectedBoards = useMemo(
-    () => BOARDS.filter((board) => selectedBoardIds.includes(board.id)),
-    [selectedBoardIds]
+    () => activeBoards.filter((board) => selectedBoardIds.includes(board.id)),
+    [activeBoards, selectedBoardIds]
   );
 
   const visibleBoardCandidates = useMemo(() => {
     const q = boardSearch.trim().toLowerCase();
-    if (!q) return BOARDS;
-    return BOARDS.filter((b) => b.name.toLowerCase().includes(q));
-  }, [boardSearch]);
+    if (!q) return activeBoards;
+    return activeBoards.filter((b) => b.name.toLowerCase().includes(q));
+  }, [activeBoards, boardSearch]);
 
   const visibleOffers = useMemo(() => {
     return OFFERS.filter((offer) => {
@@ -332,8 +345,8 @@ export default function App() {
   );
 
   const openedMoodboard = useMemo(
-    () => BOARDS.find((board) => board.id === openedMoodboardId) ?? null,
-    [openedMoodboardId]
+    () => activeBoards.find((board) => board.id === openedMoodboardId) ?? null,
+    [activeBoards, openedMoodboardId]
   );
 
   function resetEverything() {
@@ -352,6 +365,73 @@ export default function App() {
     setOfferReactions({});
     setOpenedMoodboardId(null);
     setCustomDesigner("");
+    setAuthToken(null);
+    setAuthUsername(null);
+    setConnectedBoards([]);
+    setIsConnectingPinterest(false);
+    setConnectError(null);
+  }
+
+  async function loadPinterestBoards(token: string) {
+    const response = await fetch(`${API_BASE_URL}/v1/pinterest/boards`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || `HTTP ${response.status}`);
+    }
+
+    const payload = (await response.json()) as { boards?: PinterestBoard[] };
+    const mappedBoards =
+      payload.boards?.map((board) => ({
+        id: board.id,
+        name: board.name,
+        pinCount: board.pinCount,
+      })) ?? [];
+
+    if (mappedBoards.length === 0) {
+      throw new Error("Keine Pinterest Moodboards gefunden.");
+    }
+
+    setConnectedBoards(mappedBoards);
+    setSelectedBoardIds([]);
+    setBoardSearch("");
+    setFlowStage("boards");
+  }
+
+  async function connectWithPinterest() {
+    const redirectUri = "stylematch://auth";
+    setIsConnectingPinterest(true);
+    setConnectError(null);
+
+    try {
+      const result = await WebBrowser.openAuthSessionAsync(
+        `${API_BASE_URL}/v1/auth/pinterest?redirect=${encodeURIComponent(redirectUri)}`,
+        redirectUri
+      );
+
+      if (result.type !== "success" || !result.url) {
+        throw new Error("Pinterest Login wurde abgebrochen.");
+      }
+
+      const callbackUrl = new URL(result.url);
+      const token = callbackUrl.searchParams.get("token");
+      const username = callbackUrl.searchParams.get("username");
+
+      if (!token) {
+        throw new Error("Pinterest Login war unvollständig (kein Token).");
+      }
+
+      setAuthToken(token);
+      setAuthUsername(username ?? "Pinterest User");
+      await loadPinterestBoards(token);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Pinterest Login fehlgeschlagen.";
+      setConnectError(message);
+    } finally {
+      setIsConnectingPinterest(false);
+    }
   }
 
   function nextIntroSlide() {
@@ -511,7 +591,9 @@ export default function App() {
     return (
       <View style={styles.flowCard}>
         <Text style={styles.heroTitle}>Connect Pinterest</Text>
-        <Text style={styles.bodySoft}>Prototype connection screen</Text>
+        <Text style={styles.bodySoft}>
+          Login öffnet als iOS-Webfenster von unten und schließt nach Erfolg automatisch.
+        </Text>
 
         <View style={styles.connectCard}>
           <View style={styles.connectAvatar} />
@@ -528,8 +610,37 @@ export default function App() {
           <Text style={styles.bodySoft}>All feed photos are replaced by gray placeholders.</Text>
         </View>
 
-        <Pressable style={styles.primaryButton} onPress={() => setFlowStage("boards")}>
-          <Text style={styles.primaryButtonText}>Connect (Prototype)</Text>
+        {authUsername ? (
+          <Text style={styles.bodySoft}>Verbunden als {authUsername}</Text>
+        ) : null}
+        {authToken ? <Text style={styles.bodySoft}>Session aktiv</Text> : null}
+
+        {connectError ? <Text style={styles.errorText}>{connectError}</Text> : null}
+
+        <Pressable
+          style={[styles.primaryButton, isConnectingPinterest && styles.primaryButtonDisabled]}
+          onPress={connectWithPinterest}
+          disabled={isConnectingPinterest}
+        >
+          {isConnectingPinterest ? (
+            <ActivityIndicator color={PALETTE.accentText} />
+          ) : (
+            <Text style={styles.primaryButtonText}>Login mit Pinterest</Text>
+          )}
+        </Pressable>
+
+        <Pressable
+          style={styles.secondaryButton}
+          onPress={() => {
+            setConnectError(null);
+            setConnectedBoards(SEED_BOARDS);
+            setAuthToken("__demo__");
+            setAuthUsername("Demo");
+            setFlowStage("boards");
+          }}
+          disabled={isConnectingPinterest}
+        >
+          <Text style={styles.secondaryButtonText}>Ohne Login testen</Text>
         </Pressable>
       </View>
     );
@@ -1188,6 +1299,11 @@ const styles = StyleSheet.create({
     color: PALETTE.textSoft,
     fontWeight: "500",
   },
+  errorText: {
+    fontSize: 13,
+    color: "#A31818",
+    fontWeight: "600",
+  },
   dotsRow: {
     flexDirection: "row",
     gap: 8,
@@ -1211,8 +1327,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: "auto",
   },
+  primaryButtonDisabled: {
+    opacity: 0.55,
+  },
   primaryButtonText: {
     color: PALETTE.accentText,
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  secondaryButton: {
+    borderRadius: 14,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    backgroundColor: "#F4F4F4",
+  },
+  secondaryButtonText: {
+    color: PALETTE.text,
     fontWeight: "700",
     fontSize: 15,
   },
