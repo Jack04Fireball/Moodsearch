@@ -2,32 +2,46 @@ import UIKit
 import SwiftUI
 
 enum StyleTheme {
-  static let bg = Color(red: 0.055, green: 0.055, blue: 0.067)
-  static let surface = Color(red: 0.10, green: 0.09, blue: 0.11)
-  static let surfaceAlt = Color(red: 0.13, green: 0.11, blue: 0.14)
-  static let border = Color(red: 0.22, green: 0.18, blue: 0.21)
-  static let textPrimary = Color(red: 0.95, green: 0.93, blue: 0.91)
-  static let textSecondary = Color(red: 0.69, green: 0.65, blue: 0.64)
-  static let accent = Color(red: 0.88, green: 0.09, blue: 0.20)
-  static let accentBright = Color(red: 1.00, green: 0.18, blue: 0.27)
-  static let blackCTA = Color(red: 0.07, green: 0.07, blue: 0.08)
+  // Palette sampled from app icon: near-black base + muted deep maroon accents.
+  static let bg = Color(red: 0.050, green: 0.050, blue: 0.050)
+  static let surface = Color(red: 0.080, green: 0.078, blue: 0.078)
+  static let surfaceAlt = Color(red: 0.110, green: 0.105, blue: 0.105)
+  static let border = Color(red: 0.205, green: 0.190, blue: 0.190)
+  static let textPrimary = Color(red: 0.935, green: 0.930, blue: 0.925)
+  static let textSecondary = Color(red: 0.690, green: 0.680, blue: 0.680)
+  static let accent = Color(red: 0.220, green: 0.094, blue: 0.125)
+  static let accentBright = Color(red: 0.320, green: 0.125, blue: 0.157)
+  static let badgeNeutral = Color(red: 0.830, green: 0.830, blue: 0.840)
+  static let blackCTA = Color(red: 0.020, green: 0.020, blue: 0.020)
 }
 
 struct NoiseOverlay: View {
   var body: some View {
-    GeometryReader { geo in
+    GeometryReader { _ in
       Canvas { context, size in
-        let dots = max(240, Int(size.width * size.height / 2100))
-        for i in 0..<dots {
-          let x = CGFloat((i * 73) % max(1, Int(size.width)))
-          let y = CGFloat((i * 91) % max(1, Int(size.height)))
-          let alpha = Double((i * 29) % 11) / 260.0
-          let rect = CGRect(x: x, y: y, width: 1.3, height: 1.3)
+        let w = max(1, Int(size.width))
+        let h = max(1, Int(size.height))
+
+        let brightDots = max(900, Int(size.width * size.height / 760))
+        for i in 0..<brightDots {
+          let x = CGFloat((i * 73 + 17) % w)
+          let y = CGFloat((i * 97 + 29) % h)
+          let alpha = 0.012 + Double((i * 31) % 19) / 150.0
+          let rect = CGRect(x: x, y: y, width: 1.2, height: 1.2)
           context.fill(Path(rect), with: .color(.white.opacity(alpha)))
         }
+
+        let darkDots = max(700, Int(size.width * size.height / 980))
+        for i in 0..<darkDots {
+          let x = CGFloat((i * 83 + 41) % w)
+          let y = CGFloat((i * 59 + 13) % h)
+          let alpha = 0.010 + Double((i * 23) % 17) / 170.0
+          let rect = CGRect(x: x, y: y, width: 1.1, height: 1.1)
+          context.fill(Path(rect), with: .color(.black.opacity(alpha)))
+        }
       }
-      .blendMode(.softLight)
-      .opacity(0.32)
+      .blendMode(.overlay)
+      .opacity(0.52)
     }
     .allowsHitTesting(false)
   }
@@ -991,8 +1005,9 @@ struct PrototypeRootView: View {
 
     case .boards:
       Text("Select moodboard")
-        .font(.largeTitle)
-        .bold()
+        .font(.custom("Times New Roman", size: 42))
+        .lineSpacing(8.4)
+        .tracking(0.6)
         .foregroundStyle(StyleTheme.textPrimary)
       TextField("Search board name", text: $store.boardSearch)
         .textFieldStyle(.roundedBorder)
@@ -1049,8 +1064,9 @@ struct PrototypeRootView: View {
   private func setupHeroSection(title: String, imageLabel: String, description: String) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text(title)
-        .font(.system(size: 42, weight: .semibold, design: .serif))
-        .tracking(0.5)
+        .font(.custom("Times New Roman", size: 42))
+        .lineSpacing(8.4)
+        .tracking(0.6)
         .foregroundStyle(StyleTheme.textPrimary)
       WireframeImageBlock(height: 190, cornerRadius: 14, label: imageLabel)
       Text(description)
@@ -1238,7 +1254,7 @@ struct PrototypeRootView: View {
           Text(store.likedProductIDs.contains(product.id) ? "LIKED" : "NEW")
             .font(.caption)
             .bold()
-            .foregroundStyle(StyleTheme.accentBright)
+            .foregroundStyle(store.likedProductIDs.contains(product.id) ? StyleTheme.accentBright : StyleTheme.badgeNeutral)
           Text(product.title)
             .bold()
             .lineLimit(2)
