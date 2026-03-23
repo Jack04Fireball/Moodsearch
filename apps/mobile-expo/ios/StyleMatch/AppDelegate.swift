@@ -78,30 +78,57 @@ struct SwipeableCard<Content: View>: View {
 
   @State private var dragOffset: CGFloat = 0
 
+  private var leftSwipeProgress: CGFloat {
+    min(1, max(0, -dragOffset / 90))
+  }
+
+  private var rightSwipeProgress: CGFloat {
+    min(1, max(0, dragOffset / 90))
+  }
+
   var body: some View {
-    content()
-      .offset(x: dragOffset)
-      .simultaneousGesture(
-        TapGesture().onEnded {
-          onTap()
-        }
-      )
-      .gesture(
-        DragGesture(minimumDistance: 16)
-          .onChanged { value in
-            dragOffset = max(-120, min(120, value.translation.width))
+    ZStack {
+      RoundedRectangle(cornerRadius: 12)
+        .fill(Color.black.opacity(max(leftSwipeProgress, rightSwipeProgress)))
+
+      HStack {
+        Image(systemName: "hand.thumbsup.fill")
+          .font(.system(size: 22, weight: .semibold))
+          .foregroundStyle(.white)
+          .opacity(rightSwipeProgress)
+        Spacer()
+        Image(systemName: "archivebox.fill")
+          .font(.system(size: 22, weight: .semibold))
+          .foregroundStyle(.white)
+          .opacity(leftSwipeProgress)
+      }
+      .padding(.horizontal, 18)
+
+      content()
+        .offset(x: dragOffset)
+        .simultaneousGesture(
+          TapGesture().onEnded {
+            onTap()
           }
-          .onEnded { value in
-            if value.translation.width <= -80 {
-              onSwipeLeft()
-            } else if value.translation.width >= 80 {
-              onSwipeRight()
+        )
+        .gesture(
+          DragGesture(minimumDistance: 16)
+            .onChanged { value in
+              dragOffset = max(-120, min(120, value.translation.width))
             }
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-              dragOffset = 0
+            .onEnded { value in
+              if value.translation.width <= -80 {
+                onSwipeLeft()
+              } else if value.translation.width >= 80 {
+                onSwipeRight()
+              }
+              withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                dragOffset = 0
+              }
             }
-          }
-      )
+        )
+    }
+    .clipShape(RoundedRectangle(cornerRadius: 12))
   }
 }
 
@@ -887,21 +914,41 @@ struct PrototypeRootView: View {
   private var setupFlow: some View {
     switch store.setupStep {
     case .intro1, .intro2, .intro3:
-      Text(store.introTitle()).font(.title2).bold()
-      Text(store.introText())
+      setupHeroSection(
+        title: store.introTitle(),
+        imageLabel: "Intro",
+        description: store.introText()
+      )
       Button(store.setupStep == .intro3 ? "Continue to Login" : "Next") {
         store.nextIntroStep()
       }
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, 14)
+      .background(Color.black)
+      .foregroundStyle(.white)
+      .clipShape(RoundedRectangle(cornerRadius: 12))
 
     case .login:
-      Text("Pinterest Login").font(.title2).bold()
-      Text("Prototype step: connect your Pinterest account.")
+      setupHeroSection(
+        title: "Pinterest Login",
+        imageLabel: "Login",
+        description: "Connect your Pinterest account to load your liked pins and selected moodboards."
+      )
       Button("Connect Pinterest") {
         store.connectPinterest()
       }
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, 14)
+      .background(Color.black)
+      .foregroundStyle(.white)
+      .clipShape(RoundedRectangle(cornerRadius: 12))
 
     case .boards:
-      Text("Select Pinterest Moodboards (1-10)").font(.title2).bold()
+      setupHeroSection(
+        title: "Select Moodboards",
+        imageLabel: "Moodboards",
+        description: "Choose one or more moodboards. You can configure designer, brand, price and quality later for each moodboard."
+      )
       TextField("Search board name", text: $store.boardSearch)
         .textFieldStyle(.roundedBorder)
 
@@ -942,9 +989,26 @@ struct PrototypeRootView: View {
         store.continueFromBoards()
       }
       .disabled(store.selectedBoardIDs.isEmpty)
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, 16)
+      .background(Color.black)
+      .foregroundStyle(.white)
+      .clipShape(RoundedRectangle(cornerRadius: 12))
 
     case .done:
       EmptyView()
+    }
+  }
+
+  private func setupHeroSection(title: String, imageLabel: String, description: String) -> some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Text(title)
+        .font(.largeTitle)
+        .bold()
+      WireframeImageBlock(height: 190, cornerRadius: 14, label: imageLabel)
+      Text(description)
+        .font(.body)
+        .foregroundStyle(.secondary)
     }
   }
 
@@ -1060,13 +1124,14 @@ struct PrototypeRootView: View {
     Text("All selected moodboards with visual covers. Open one to see pins and bought items.")
       .font(.caption)
       .foregroundStyle(.secondary)
+    boardFilterBar
 
-    if store.moodboardsOverviewBoards.isEmpty {
+    if store.visibleBoardsForTabs.isEmpty {
       Text("No selected moodboards yet.")
     }
 
     LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-      ForEach(store.moodboardsOverviewBoards) { board in
+      ForEach(store.visibleBoardsForTabs) { board in
         Button {
           store.selectedMoodboard = board
         } label: {
