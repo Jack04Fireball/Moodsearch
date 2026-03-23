@@ -38,8 +38,42 @@ struct Product: Identifiable, Hashable {
   let recencyBoost: Int
 }
 
+struct WireframeImageBlock: View {
+  let width: CGFloat?
+  let height: CGFloat
+  let cornerRadius: CGFloat
+  var label: String = "Image"
+
+  init(width: CGFloat? = nil, height: CGFloat, cornerRadius: CGFloat = 10, label: String = "Image") {
+    self.width = width
+    self.height = height
+    self.cornerRadius = cornerRadius
+    self.label = label
+  }
+
+  var body: some View {
+    ZStack {
+      RoundedRectangle(cornerRadius: cornerRadius)
+        .fill(Color(.systemGray5))
+
+      RoundedRectangle(cornerRadius: cornerRadius)
+        .stroke(Color(.systemGray3), lineWidth: 1)
+
+      VStack(spacing: 4) {
+        Image(systemName: "photo")
+          .font(.system(size: 16, weight: .semibold))
+          .foregroundStyle(.gray)
+        Text(label)
+          .font(.caption2)
+          .foregroundStyle(.gray)
+      }
+    }
+    .frame(width: width, height: height)
+  }
+}
+
 final class PrototypeStore: ObservableObject {
-  @Published var setupStep: SetupStep = .done
+  @Published var setupStep: SetupStep = .intro1
   @Published var mainTab: MainTab = .home
 
   @Published var boardSearch: String = ""
@@ -518,21 +552,7 @@ struct BoardDetailView: View {
         } else {
           ForEach(bought) { product in
             HStack(spacing: 10) {
-              AsyncImage(url: URL(string: product.productImageURL)) { phase in
-                switch phase {
-                case .success(let image):
-                  image
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 70, height: 70)
-                    .clipped()
-                    .cornerRadius(8)
-                default:
-                  RoundedRectangle(cornerRadius: 8)
-                    .fill(.gray.opacity(0.2))
-                    .frame(width: 70, height: 70)
-                }
-              }
+              WireframeImageBlock(width: 70, height: 70, cornerRadius: 8, label: "Product")
 
               VStack(alignment: .leading, spacing: 3) {
                 Text(product.title).bold()
@@ -586,22 +606,8 @@ struct BoardDetailView: View {
   }
 
   private func pinCard(url: String, height: CGFloat) -> some View {
-    AsyncImage(url: URL(string: url)) { phase in
-      switch phase {
-      case .success(let image):
-        image
-          .resizable()
-          .scaledToFill()
-          .frame(maxWidth: .infinity)
-          .frame(height: height)
-          .clipped()
-          .cornerRadius(12)
-      default:
-        RoundedRectangle(cornerRadius: 12)
-          .fill(.gray.opacity(0.2))
-          .frame(height: height)
-      }
-    }
+    WireframeImageBlock(height: height, cornerRadius: 12, label: "Pin")
+      .frame(maxWidth: .infinity)
   }
 }
 
@@ -612,6 +618,10 @@ struct PrototypeRootView: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 14) {
+          Text("Wireframe Build 4")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
           if store.setupStep != .done {
             setupFlow
           } else {
@@ -657,21 +667,7 @@ struct PrototypeRootView: View {
           store.toggleBoard(board)
         } label: {
           HStack(spacing: 10) {
-            AsyncImage(url: URL(string: board.coverImageURL)) { phase in
-              switch phase {
-              case .success(let image):
-                image
-                  .resizable()
-                  .scaledToFill()
-                  .frame(width: 56, height: 56)
-                  .clipped()
-                  .cornerRadius(8)
-              default:
-                RoundedRectangle(cornerRadius: 8)
-                  .fill(.gray.opacity(0.2))
-                  .frame(width: 56, height: 56)
-              }
-            }
+            WireframeImageBlock(width: 56, height: 56, cornerRadius: 8, label: "Board")
 
             VStack(alignment: .leading) {
               Text(board.name)
@@ -801,7 +797,7 @@ struct PrototypeRootView: View {
       } else {
         Text("Compliance acknowledged for this session.")
           .font(.caption)
-          .foregroundStyle(.green)
+          .foregroundStyle(.secondary)
       }
     }
     .padding(12)
@@ -819,7 +815,7 @@ struct PrototypeRootView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(store.activeBoardFilter == nil ? Color.red.opacity(0.16) : Color(.systemGray6))
+        .background(store.activeBoardFilter == nil ? Color(.systemGray4) : Color(.systemGray6))
         .clipShape(Capsule())
 
         ForEach(store.selectedBoards) { board in
@@ -828,7 +824,7 @@ struct PrototypeRootView: View {
           }
           .padding(.horizontal, 14)
           .padding(.vertical, 10)
-          .background(store.activeBoardFilter == board.id ? Color.red.opacity(0.16) : Color(.systemGray6))
+          .background(store.activeBoardFilter == board.id ? Color(.systemGray4) : Color(.systemGray6))
           .clipShape(Capsule())
         }
       }
@@ -885,21 +881,7 @@ struct PrototypeRootView: View {
           store.selectedMoodboard = board
         } label: {
           VStack(alignment: .leading, spacing: 8) {
-            AsyncImage(url: URL(string: board.coverImageURL)) { phase in
-              switch phase {
-              case .success(let image):
-                image
-                  .resizable()
-                  .scaledToFill()
-                  .frame(height: 170)
-                  .clipped()
-                  .cornerRadius(12)
-              default:
-                RoundedRectangle(cornerRadius: 12)
-                  .fill(.gray.opacity(0.2))
-                  .frame(height: 170)
-              }
-            }
+            WireframeImageBlock(height: 170, cornerRadius: 12, label: "Moodboard")
 
             Text(board.name).bold()
               .lineLimit(2)
@@ -927,27 +909,13 @@ struct PrototypeRootView: View {
       let imageWidth = max(140, proxy.size.width - infoWidth - 16)
 
       HStack(spacing: 10) {
-        AsyncImage(url: URL(string: product.productImageURL)) { phase in
-          switch phase {
-          case .success(let image):
-            image
-              .resizable()
-              .scaledToFill()
-              .frame(width: imageWidth, height: 138)
-              .clipped()
-              .cornerRadius(10)
-          default:
-            RoundedRectangle(cornerRadius: 10)
-              .fill(.gray.opacity(0.2))
-              .frame(width: imageWidth, height: 138)
-          }
-        }
+        WireframeImageBlock(width: imageWidth, height: 138, cornerRadius: 10, label: "Product")
 
         VStack(alignment: .leading, spacing: 4) {
           Text("NEW")
             .font(.caption)
             .bold()
-            .foregroundStyle(.red)
+            .foregroundStyle(.secondary)
           Text(product.title)
             .bold()
             .lineLimit(2)
