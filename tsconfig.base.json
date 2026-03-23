@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@stylematch/shared-types": ["packages/shared-types/src"],
+      "@stylematch/ai-core": ["packages/ai-core/src"],
+      "@stylematch/search-core": ["packages/search-core/src"]
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "StyleMatch",
+    "slug": "stylematch",
+    "scheme": "stylematch",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f2f2f2"
+    },
+    "ios": {
+      "bundleIdentifier": "com.noahbangerter.stylematch"
+    },
+    "android": {
+      "package": "com.noahbangerter.stylematch"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "apiBaseUrl": "http://10.5.8.80:4000"
+    }
+  }
+}

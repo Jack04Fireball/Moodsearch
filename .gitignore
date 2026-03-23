@@ -1,0 +1,17 @@
+node_modules
+.pnpm-store
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+dist
+build
+coverage
+.expo
+apps/mobile-expo/.expo
+apps/mobile-expo/android
+apps/mobile-expo/ios/Pods
+apps/mobile-expo/ios/build
+apps/mobile-expo/ios/build-sim
+apps/mobile-expo/ios/.xcode.env.local

@@ -1,0 +1,16 @@
+{
+  "name": "@stylematch/ai-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@stylematch/shared-types": "workspace:*"
+  },
+  "scripts": {
+    "build": "../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "typecheck": "../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'lint ai-core'"
+  }
+}

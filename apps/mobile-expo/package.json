@@ -1,0 +1,28 @@
+{
+  "name": "@stylematch/mobile-expo",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "dev": "./node_modules/.bin/expo start",
+    "ios": "./node_modules/.bin/expo run:ios",
+    "android": "./node_modules/.bin/expo run:android",
+    "typecheck": "./node_modules/.bin/tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'lint mobile'"
+  },
+  "dependencies": {
+    "@stylematch/shared-types": "workspace:*",
+    "expo": "~53.0.22",
+    "expo-constants": "^55.0.7",
+    "expo-status-bar": "~2.2.3",
+    "expo-web-browser": "^55.0.9",
+    "react": "19.0.0",
+    "react-native": "0.79.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@react-native-community/cli": "^20.1.2",
+    "@types/react": "~19.0.10",
+    "typescript": "^5.9.2"
+  }
+}
