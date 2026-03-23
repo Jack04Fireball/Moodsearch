@@ -34,6 +34,13 @@ enum StyleTheme {
   static let borderGradient = LinearGradient(colors: [border, border], startPoint: .leading, endPoint: .trailing)
   static let ctaGradient = accentGradient
   static let blackCTA = surfaceAlt
+
+  // Typography tuning
+  static let posterH1Size: CGFloat = 112
+  static let posterH1LineSpacing: CGFloat = 28   // optical ~125% rhythm
+  static let sectionH1Size: CGFloat = 92
+  static let sectionH1LineSpacing: CGFloat = 18
+  static let appHeaderH1Size: CGFloat = 84
 }
 
 struct NoiseOverlay: View {
@@ -97,7 +104,7 @@ enum SetupStep {
   case done
 }
 
-enum MainTab {
+enum MainTab: Hashable {
   case home
   case moodboards
   case archive
@@ -1075,8 +1082,8 @@ struct PrototypeRootView: View {
 
     case .boards:
       Text("Select moodboard")
-        .font(.custom("Times New Roman", size: 126))
-        .lineSpacing(63)
+        .font(.custom("Times New Roman", size: StyleTheme.sectionH1Size))
+        .lineSpacing(StyleTheme.sectionH1LineSpacing)
         .tracking(0.6)
         .lineLimit(2)
         .minimumScaleFactor(0.25)
@@ -1162,8 +1169,8 @@ struct PrototypeRootView: View {
             .foregroundStyle(StyleTheme.textSecondary)
 
           Text(title)
-            .font(.custom("Times New Roman", size: 126))
-            .lineSpacing(63)
+            .font(.custom("Times New Roman", size: StyleTheme.posterH1Size))
+            .lineSpacing(StyleTheme.posterH1LineSpacing)
             .tracking(0.9)
             .lineLimit(2)
             .minimumScaleFactor(0.25)
@@ -1172,6 +1179,7 @@ struct PrototypeRootView: View {
           Text(description)
             .font(.body)
             .foregroundStyle(StyleTheme.textSecondary)
+            .lineSpacing(4)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 4)
 
@@ -1212,8 +1220,8 @@ struct PrototypeRootView: View {
   private func setupHeroSection(title: String, imageLabel: String, description: String) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text(title)
-        .font(.custom("Times New Roman", size: 126))
-        .lineSpacing(63)
+        .font(.custom("Times New Roman", size: StyleTheme.sectionH1Size))
+        .lineSpacing(StyleTheme.sectionH1LineSpacing)
         .tracking(0.6)
         .lineLimit(2)
         .minimumScaleFactor(0.25)
@@ -1222,6 +1230,7 @@ struct PrototypeRootView: View {
       Text(description)
         .font(.body)
         .foregroundStyle(StyleTheme.textSecondary)
+        .lineSpacing(3)
     }
   }
 
@@ -1251,25 +1260,20 @@ struct PrototypeRootView: View {
 
   private var stickyTabHeader: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Button {
-        store.mainTab = .home
-      } label: {
-        Text("Home")
-          .font(.custom("Times New Roman", size: 78))
-          .tracking(1.0)
-          .lineLimit(1)
-          .minimumScaleFactor(0.45)
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .foregroundStyle(store.mainTab == .home ? AnyShapeStyle(StyleTheme.h1Gradient) : AnyShapeStyle(StyleTheme.textPrimary))
-      }
-      .buttonStyle(.plain)
+      Text(title(for: store.mainTab))
+        .font(.custom("Times New Roman", size: StyleTheme.appHeaderH1Size))
+        .lineSpacing(8)
+        .tracking(0.9)
+        .lineLimit(1)
+        .minimumScaleFactor(0.45)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(StyleTheme.h1Gradient)
 
       HStack(spacing: 18) {
-        secondaryTabButton(title: "Moodboards", isActive: store.mainTab == .moodboards) {
-          store.mainTab = .moodboards
-        }
-        secondaryTabButton(title: "Archive", isActive: store.mainTab == .archive) {
-          store.mainTab = .archive
+        ForEach([MainTab.home, MainTab.moodboards, MainTab.archive], id: \.self) { tab in
+          secondaryTabButton(tab: tab, isActive: store.mainTab == tab) {
+            store.mainTab = tab
+          }
         }
       }
     }
@@ -1286,10 +1290,10 @@ struct PrototypeRootView: View {
     }
   }
 
-  private func secondaryTabButton(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+  private func secondaryTabButton(tab: MainTab, isActive: Bool, action: @escaping () -> Void) -> some View {
     return Button(action: action) {
       VStack(alignment: .leading, spacing: 6) {
-        Text(title.uppercased())
+        Text(title(for: tab).uppercased())
           .font(.system(size: 19, weight: isActive ? .semibold : .medium))
           .tracking(1.1)
           .foregroundStyle(isActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
@@ -1302,6 +1306,17 @@ struct PrototypeRootView: View {
       .padding(.vertical, 4)
     }
     .buttonStyle(.plain)
+  }
+
+  private func title(for tab: MainTab) -> String {
+    switch tab {
+    case .home:
+      return "Home"
+    case .moodboards:
+      return "Moodboards"
+    case .archive:
+      return "Archive"
+    }
   }
 
   @ViewBuilder
