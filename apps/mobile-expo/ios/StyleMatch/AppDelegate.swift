@@ -1,6 +1,38 @@
 import UIKit
 import SwiftUI
 
+enum StyleTheme {
+  static let bg = Color(red: 0.055, green: 0.055, blue: 0.067)
+  static let surface = Color(red: 0.10, green: 0.09, blue: 0.11)
+  static let surfaceAlt = Color(red: 0.13, green: 0.11, blue: 0.14)
+  static let border = Color(red: 0.22, green: 0.18, blue: 0.21)
+  static let textPrimary = Color(red: 0.95, green: 0.93, blue: 0.91)
+  static let textSecondary = Color(red: 0.69, green: 0.65, blue: 0.64)
+  static let accent = Color(red: 0.88, green: 0.09, blue: 0.20)
+  static let accentBright = Color(red: 1.00, green: 0.18, blue: 0.27)
+  static let blackCTA = Color(red: 0.07, green: 0.07, blue: 0.08)
+}
+
+struct NoiseOverlay: View {
+  var body: some View {
+    GeometryReader { geo in
+      Canvas { context, size in
+        let dots = max(240, Int(size.width * size.height / 2100))
+        for i in 0..<dots {
+          let x = CGFloat((i * 73) % max(1, Int(size.width)))
+          let y = CGFloat((i * 91) % max(1, Int(size.height)))
+          let alpha = Double((i * 29) % 11) / 260.0
+          let rect = CGRect(x: x, y: y, width: 1.3, height: 1.3)
+          context.fill(Path(rect), with: .color(.white.opacity(alpha)))
+        }
+      }
+      .blendMode(.softLight)
+      .opacity(0.32)
+    }
+    .allowsHitTesting(false)
+  }
+}
+
 enum SetupStep {
   case intro1
   case intro2
@@ -52,18 +84,18 @@ struct WireframeImageBlock: View {
   var body: some View {
     ZStack {
       RoundedRectangle(cornerRadius: cornerRadius)
-        .fill(Color(.systemGray5))
+        .fill(StyleTheme.surfaceAlt)
 
       RoundedRectangle(cornerRadius: cornerRadius)
-        .stroke(Color(.systemGray3), lineWidth: 1)
+        .stroke(StyleTheme.border, lineWidth: 1)
 
       VStack(spacing: 4) {
         Image(systemName: "photo")
           .font(.system(size: 16, weight: .semibold))
-          .foregroundStyle(.gray)
+          .foregroundStyle(StyleTheme.textSecondary)
         Text(label)
           .font(.caption2)
-          .foregroundStyle(.gray)
+          .foregroundStyle(StyleTheme.textSecondary)
       }
     }
     .frame(width: width, height: height)
@@ -617,10 +649,11 @@ struct BoardSettingsView: View {
         Text("Moodboard Settings")
           .font(.title3)
           .bold()
+          .foregroundStyle(StyleTheme.textPrimary)
 
         Text("Set filters for this moodboard only.")
           .font(.caption)
-          .foregroundStyle(.secondary)
+          .foregroundStyle(StyleTheme.textSecondary)
 
         Text("Brand").font(.headline)
         HStack {
@@ -713,6 +746,7 @@ struct BoardSettingsView: View {
       }
       .padding(16)
     }
+    .background(StyleTheme.bg)
   }
 
   private func settingsChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
@@ -724,9 +758,9 @@ struct BoardSettingsView: View {
         Image(systemName: selected ? "checkmark.circle.fill" : "circle")
       }
       .padding(10)
-      .background(selected ? Color(.systemGray4) : Color(.systemGray6))
+      .background(selected ? StyleTheme.accent : StyleTheme.surfaceAlt)
       .clipShape(RoundedRectangle(cornerRadius: 10))
-      .foregroundStyle(.primary)
+      .foregroundStyle(StyleTheme.textPrimary)
     }
     .buttonStyle(.plain)
   }
@@ -743,12 +777,13 @@ struct BoardDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
           Text("Pinterest liked pins")
             .font(.headline)
+            .foregroundStyle(StyleTheme.textPrimary)
           categoryTabs
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
         .padding(.bottom, 8)
-        .background(Color(.systemBackground))
+        .background(StyleTheme.surface)
 
         TabView(selection: $pageSelection) {
           pinsPage
@@ -786,9 +821,9 @@ struct BoardDetailView: View {
         Text(title)
           .font(.subheadline)
           .bold()
-          .foregroundStyle(.primary)
+          .foregroundStyle(StyleTheme.textPrimary)
         Rectangle()
-          .fill(pageSelection == index ? Color.primary : Color.clear)
+          .fill(pageSelection == index ? StyleTheme.accentBright : Color.clear)
           .frame(height: 2)
       }
     }
@@ -800,9 +835,10 @@ struct BoardDetailView: View {
       VStack(alignment: .leading, spacing: 12) {
         Text("Pinterest-like pins")
           .font(.headline)
+          .foregroundStyle(StyleTheme.textPrimary)
         Text("Swipe left for purchases, swipe left again for settings.")
           .font(.caption)
-          .foregroundStyle(.secondary)
+          .foregroundStyle(StyleTheme.textSecondary)
 
         let columns = pinterestColumns()
         HStack(alignment: .top, spacing: 10) {
@@ -827,10 +863,11 @@ struct BoardDetailView: View {
       VStack(alignment: .leading, spacing: 10) {
         Text("Purchases for this moodboard")
           .font(.headline)
+          .foregroundStyle(StyleTheme.textPrimary)
         let bought = store.boughtProducts(for: board)
         if bought.isEmpty {
           Text("No purchases for this moodboard yet.")
-            .foregroundStyle(.secondary)
+            .foregroundStyle(StyleTheme.textSecondary)
             .padding(.top, 8)
         } else {
           ForEach(bought) { product in
@@ -839,15 +876,17 @@ struct BoardDetailView: View {
 
               VStack(alignment: .leading, spacing: 3) {
                 Text(product.title).bold()
+                  .foregroundStyle(StyleTheme.textPrimary)
                 Text("CHF \(product.priceCHF)")
+                  .foregroundStyle(StyleTheme.textPrimary)
                 Text("\(product.brand) · \(product.designer)")
                   .font(.caption)
-                  .foregroundStyle(.secondary)
+                  .foregroundStyle(StyleTheme.textSecondary)
               }
               Spacer()
             }
             .padding(10)
-            .background(Color(.systemGray6))
+            .background(StyleTheme.surfaceAlt)
             .clipShape(RoundedRectangle(cornerRadius: 10))
           }
         }
@@ -888,18 +927,24 @@ struct PrototypeRootView: View {
 
   var body: some View {
     NavigationStack {
-      Group {
-        if store.setupStep != .done {
-          ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-              setupFlow
+      ZStack {
+        StyleTheme.bg.ignoresSafeArea()
+        NoiseOverlay().ignoresSafeArea()
+
+        Group {
+          if store.setupStep != .done {
+            ScrollView {
+              VStack(alignment: .leading, spacing: 14) {
+                setupFlow
+              }
+              .padding(16)
             }
-            .padding(16)
+          } else {
+            appFlow
           }
-        } else {
-          appFlow
         }
       }
+      .tint(StyleTheme.accentBright)
       .toolbar(.hidden, for: .navigationBar)
       .sheet(item: $store.selectedProduct) { product in
         ProductDetailSheetView(store: store, product: product)
@@ -908,6 +953,7 @@ struct PrototypeRootView: View {
         BoardDetailView(store: store, board: board)
       }
     }
+    .preferredColorScheme(.dark)
   }
 
   @ViewBuilder
@@ -924,8 +970,8 @@ struct PrototypeRootView: View {
       }
       .frame(maxWidth: .infinity)
       .padding(.vertical, 14)
-      .background(Color.black)
-      .foregroundStyle(.white)
+      .background(StyleTheme.blackCTA)
+      .foregroundStyle(StyleTheme.textPrimary)
       .clipShape(RoundedRectangle(cornerRadius: 12))
 
     case .login:
@@ -939,14 +985,15 @@ struct PrototypeRootView: View {
       }
       .frame(maxWidth: .infinity)
       .padding(.vertical, 14)
-      .background(Color.black)
-      .foregroundStyle(.white)
+      .background(StyleTheme.blackCTA)
+      .foregroundStyle(StyleTheme.textPrimary)
       .clipShape(RoundedRectangle(cornerRadius: 12))
 
     case .boards:
       Text("Select moodboard")
         .font(.largeTitle)
         .bold()
+        .foregroundStyle(StyleTheme.textPrimary)
       TextField("Search board name", text: $store.boardSearch)
         .textFieldStyle(.roundedBorder)
 
@@ -961,7 +1008,7 @@ struct PrototypeRootView: View {
                 WireframeImageBlock(height: 162, cornerRadius: 12, label: "Moodboard")
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                   .font(.system(size: 20, weight: .semibold))
-                  .foregroundStyle(isSelected ? Color(.darkGray) : .secondary)
+                  .foregroundStyle(isSelected ? StyleTheme.accentBright : StyleTheme.textSecondary)
                   .padding(8)
               }
 
@@ -972,10 +1019,10 @@ struct PrototypeRootView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(8)
-            .background(Color(.systemBackground))
+            .background(StyleTheme.surface)
             .overlay(
               RoundedRectangle(cornerRadius: 12)
-                .stroke(isSelected ? Color(.darkGray) : Color(.systemGray4), lineWidth: 2)
+                .stroke(isSelected ? StyleTheme.accent : StyleTheme.border, lineWidth: 2)
             )
           }
           .buttonStyle(.plain)
@@ -983,14 +1030,15 @@ struct PrototypeRootView: View {
       }
 
       Text("Selected: \(store.selectedBoardIDs.count)")
+        .foregroundStyle(StyleTheme.textSecondary)
       Button("Tap to get started") {
         store.continueFromBoards()
       }
       .disabled(store.selectedBoardIDs.isEmpty)
       .frame(maxWidth: .infinity)
       .padding(.vertical, 16)
-      .background(Color.black)
-      .foregroundStyle(.white)
+      .background(StyleTheme.blackCTA)
+      .foregroundStyle(StyleTheme.textPrimary)
       .clipShape(RoundedRectangle(cornerRadius: 12))
 
     case .done:
@@ -1001,12 +1049,13 @@ struct PrototypeRootView: View {
   private func setupHeroSection(title: String, imageLabel: String, description: String) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text(title)
-        .font(.largeTitle)
-        .bold()
+        .font(.system(size: 42, weight: .semibold, design: .serif))
+        .tracking(0.5)
+        .foregroundStyle(StyleTheme.textPrimary)
       WireframeImageBlock(height: 190, cornerRadius: 14, label: imageLabel)
       Text(description)
         .font(.body)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(StyleTheme.textSecondary)
     }
   }
 
@@ -1049,10 +1098,10 @@ struct PrototypeRootView: View {
     .padding(.horizontal, 16)
     .padding(.vertical, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(Color(.systemBackground))
+    .background(StyleTheme.surface)
     .overlay(alignment: .bottom) {
       Rectangle()
-        .fill(Color(.systemGray4))
+        .fill(StyleTheme.border)
         .frame(height: 1)
     }
   }
@@ -1064,16 +1113,18 @@ struct PrototypeRootView: View {
         .bold()
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(isActive ? Color(.systemGray4) : Color(.systemGray6))
+        .background(isActive ? StyleTheme.accent : StyleTheme.surfaceAlt)
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        .foregroundStyle(.primary)
+        .foregroundStyle(StyleTheme.textPrimary)
     }
     .buttonStyle(.plain)
   }
 
   @ViewBuilder
   private var boardFilterBar: some View {
-    Text("Moodboard Filter").font(.headline)
+    Text("Moodboard Filter")
+      .font(.system(.headline, design: .default))
+      .foregroundStyle(StyleTheme.textPrimary)
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
         Button(store.activeBoardFilter == nil ? "[All]" : "All") {
@@ -1081,8 +1132,9 @@ struct PrototypeRootView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(store.activeBoardFilter == nil ? Color(.systemGray4) : Color(.systemGray6))
+        .background(store.activeBoardFilter == nil ? StyleTheme.accent : StyleTheme.surfaceAlt)
         .clipShape(Capsule())
+        .foregroundStyle(StyleTheme.textPrimary)
 
         ForEach(store.selectedBoards) { board in
           Button(store.activeBoardFilter == board.id ? "[\(board.name)]" : board.name) {
@@ -1090,8 +1142,9 @@ struct PrototypeRootView: View {
           }
           .padding(.horizontal, 14)
           .padding(.vertical, 10)
-          .background(store.activeBoardFilter == board.id ? Color(.systemGray4) : Color(.systemGray6))
+          .background(store.activeBoardFilter == board.id ? StyleTheme.accent : StyleTheme.surfaceAlt)
           .clipShape(Capsule())
+          .foregroundStyle(StyleTheme.textPrimary)
         }
       }
     }
@@ -1118,10 +1171,12 @@ struct PrototypeRootView: View {
 
   @ViewBuilder
   private var moodboardsTab: some View {
-    Text("Pinterest Moodboards").font(.headline)
+    Text("Pinterest Moodboards")
+      .font(.system(.headline, design: .default))
+      .foregroundStyle(StyleTheme.textPrimary)
     Text("All selected moodboards with visual covers. Open one to see pins and bought items.")
       .font(.caption)
-      .foregroundStyle(.secondary)
+      .foregroundStyle(StyleTheme.textSecondary)
     boardFilterBar
 
     if store.visibleBoardsForTabs.isEmpty {
@@ -1144,12 +1199,13 @@ struct PrototypeRootView: View {
 
             Text(board.name).bold()
               .lineLimit(2)
+              .foregroundStyle(StyleTheme.textPrimary)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(8)
-          .background(Color(.systemBackground))
+          .background(StyleTheme.surface)
           .overlay(
-            RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.border, lineWidth: 1)
           )
           .contentShape(Rectangle())
           .frame(minHeight: 300)
@@ -1182,30 +1238,32 @@ struct PrototypeRootView: View {
           Text(store.likedProductIDs.contains(product.id) ? "LIKED" : "NEW")
             .font(.caption)
             .bold()
-            .foregroundStyle(.secondary)
+            .foregroundStyle(StyleTheme.accentBright)
           Text(product.title)
             .bold()
             .lineLimit(2)
+            .foregroundStyle(StyleTheme.textPrimary)
           Text("CHF \(product.priceCHF)")
             .font(.subheadline)
+            .foregroundStyle(StyleTheme.textPrimary)
           Text(product.brand)
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(StyleTheme.textSecondary)
           Text(product.designer)
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(StyleTheme.textSecondary)
           Text("Score \(store.score(for: product))")
             .font(.caption2)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(StyleTheme.textSecondary)
         }
         .frame(width: infoWidth, alignment: .leading)
       }
       .frame(height: cardHeight)
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(8)
-      .background(Color(.systemBackground))
+      .background(StyleTheme.surface)
       .overlay(
-        RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.35), lineWidth: 1)
+        RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.border, lineWidth: 1)
       )
     }
     .frame(height: 186)
@@ -1241,20 +1299,22 @@ struct PrototypeRootView: View {
             .font(.subheadline)
             .bold()
             .lineLimit(2)
+            .foregroundStyle(StyleTheme.textPrimary)
           Text("CHF \(product.priceCHF)")
             .font(.subheadline)
+            .foregroundStyle(StyleTheme.textPrimary)
           Text(store.boardName(for: product.boardID))
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(StyleTheme.textSecondary)
         }
         .frame(width: textWidth, alignment: .leading)
       }
       .frame(height: cardHeight)
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(8)
-      .background(Color(.systemBackground))
+      .background(StyleTheme.surface)
       .overlay(
-        RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.35), lineWidth: 1)
+        RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.border, lineWidth: 1)
       )
     }
     .frame(height: 170)
@@ -1288,10 +1348,11 @@ struct ProductDetailSheetView: View {
           Text(product.title)
             .font(.title3)
             .bold()
+            .foregroundStyle(StyleTheme.textPrimary)
 
           Text("Curated from your moodboard style. This product is ranked higher because fit, shape and overall vibe align with your current board direction.")
             .font(.body)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(StyleTheme.textSecondary)
 
           VStack(spacing: 0) {
             infoRow(title: "Price", value: "CHF \(product.priceCHF)")
@@ -1304,21 +1365,22 @@ struct ProductDetailSheetView: View {
             Divider()
             infoRow(title: "Moodboard", value: store.boardName(for: product.boardID))
           }
-          .background(Color(.systemGray6))
+          .background(StyleTheme.surfaceAlt)
           .clipShape(RoundedRectangle(cornerRadius: 12))
 
           Text("Buy now")
             .font(.title2)
             .bold()
+            .foregroundStyle(StyleTheme.textPrimary)
 
           Button("Buy now") {
             // Placeholder: in MVP this opens the product in store with selected size.
           }
           .font(.headline)
-          .foregroundStyle(.white)
+          .foregroundStyle(StyleTheme.textPrimary)
           .frame(maxWidth: .infinity)
           .padding(.vertical, 14)
-          .background(Color.black)
+          .background(StyleTheme.blackCTA)
           .clipShape(RoundedRectangle(cornerRadius: 12))
 
           HStack(spacing: 24) {
@@ -1342,6 +1404,8 @@ struct ProductDetailSheetView: View {
         .padding(16)
       }
       .navigationTitle("Product")
+      .toolbarBackground(StyleTheme.surface, for: .navigationBar)
+      .toolbarBackground(.visible, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button("Done") { store.selectedProduct = nil }
@@ -1354,11 +1418,12 @@ struct ProductDetailSheetView: View {
     HStack(alignment: .firstTextBaseline) {
       Text(title)
         .font(.subheadline)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(StyleTheme.textSecondary)
       Spacer()
       Text(value)
         .font(.subheadline)
         .bold()
+        .foregroundStyle(StyleTheme.textPrimary)
     }
     .padding(.horizontal, 12)
     .padding(.vertical, 10)
@@ -1372,7 +1437,7 @@ struct ProductDetailSheetView: View {
         Text(label)
           .font(.caption2)
       }
-      .foregroundStyle(.primary)
+      .foregroundStyle(StyleTheme.textPrimary)
     }
     .buttonStyle(.plain)
   }
