@@ -1004,6 +1004,9 @@ struct BoardDetailView: View {
 
 struct PrototypeRootView: View {
   @StateObject private var store = PrototypeStore()
+  private var isPosterIntroStep: Bool {
+    store.setupStep == .intro1 || store.setupStep == .intro2 || store.setupStep == .intro3
+  }
 
   var body: some View {
     NavigationStack {
@@ -1013,11 +1016,15 @@ struct PrototypeRootView: View {
 
         Group {
           if store.setupStep != .done {
-            ScrollView {
-              VStack(alignment: .leading, spacing: 14) {
-                setupFlow
+            if isPosterIntroStep {
+              setupFlow
+            } else {
+              ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                  setupFlow
+                }
+                .padding(16)
               }
-              .padding(16)
             }
           } else {
             appFlow
@@ -1039,21 +1046,38 @@ struct PrototypeRootView: View {
   @ViewBuilder
   private var setupFlow: some View {
     switch store.setupStep {
-    case .intro1, .intro2, .intro3:
-      setupHeroSection(
-        title: store.introTitle(),
-        imageLabel: "Intro",
-        description: store.introText()
-      )
-      Button(store.setupStep == .intro3 ? "Continue to Login" : "Next") {
+    case .intro1:
+      introPosterScreen(
+        posterIndex: "01 / 03",
+        title: "CURATE",
+        imageLabel: "Intro Poster I",
+        description: "Find products that match your Pinterest style and create your own visual direction.",
+        actionTitle: "NEXT"
+      ) {
         store.nextIntroStep()
       }
-      .frame(maxWidth: .infinity)
-      .padding(.vertical, 14)
-      .background(StyleTheme.ctaGradient)
-      .foregroundStyle(StyleTheme.textPrimary)
-      .clipShape(RoundedRectangle(cornerRadius: 12))
-      .punkTexture(0.3)
+
+    case .intro2:
+      introPosterScreen(
+        posterIndex: "02 / 03",
+        title: "FOCUS",
+        imageLabel: "Intro Poster II",
+        description: "Use moodboard-based focus so the feed ranks what fits your aesthetic first.",
+        actionTitle: "NEXT"
+      ) {
+        store.nextIntroStep()
+      }
+
+    case .intro3:
+      introPosterScreen(
+        posterIndex: "03 / 03",
+        title: "MATCH",
+        imageLabel: "Intro Poster III",
+        description: "Open high-match offers and move faster from inspiration to buying.",
+        actionTitle: "CONTINUE TO LOGIN"
+      ) {
+        store.nextIntroStep()
+      }
 
     case .login:
       setupHeroSection(
@@ -1061,15 +1085,12 @@ struct PrototypeRootView: View {
         imageLabel: "Login",
         description: "Connect your Pinterest account to load your liked pins and selected moodboards."
       )
-      Button("Connect Pinterest") {
+      Button {
         store.connectPinterest()
+      } label: {
+        editorialActionLabel("Connect Pinterest")
       }
-      .frame(maxWidth: .infinity)
-      .padding(.vertical, 14)
-      .background(StyleTheme.ctaGradient)
-      .foregroundStyle(StyleTheme.textPrimary)
-      .clipShape(RoundedRectangle(cornerRadius: 12))
-      .punkTexture(0.3)
+      .buttonStyle(.plain)
 
     case .boards:
       Text("Select moodboard")
@@ -1117,19 +1138,93 @@ struct PrototypeRootView: View {
 
       Text("Selected: \(store.selectedBoardIDs.count)")
         .foregroundStyle(StyleTheme.textSecondary)
-      Button("Tap to get started") {
+      Button {
         store.continueFromBoards()
+      } label: {
+        editorialActionLabel("Tap to get started")
+          .opacity(store.selectedBoardIDs.isEmpty ? 0.45 : 1.0)
       }
       .disabled(store.selectedBoardIDs.isEmpty)
-      .frame(maxWidth: .infinity)
-      .padding(.vertical, 16)
-      .background(StyleTheme.ctaGradient)
-      .foregroundStyle(StyleTheme.textPrimary)
-      .clipShape(RoundedRectangle(cornerRadius: 12))
-      .punkTexture(0.3)
+      .buttonStyle(.plain)
+      .frame(maxWidth: .infinity, alignment: .leading)
 
     case .done:
       EmptyView()
+    }
+  }
+
+  private func introPosterScreen(
+    posterIndex: String,
+    title: String,
+    imageLabel: String,
+    description: String,
+    actionTitle: String,
+    action: @escaping () -> Void
+  ) -> some View {
+    GeometryReader { proxy in
+      ZStack(alignment: .bottomLeading) {
+        WireframeImageBlock(height: proxy.size.height, cornerRadius: 0, label: imageLabel)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .clipped()
+
+        LinearGradient(
+          colors: [Color.black.opacity(0.08), Color.black.opacity(0.22), Color.black.opacity(0.74)],
+          startPoint: .top,
+          endPoint: .bottom
+        )
+        .ignoresSafeArea()
+
+        VStack(alignment: .leading, spacing: 12) {
+          Text(posterIndex)
+            .font(.caption)
+            .tracking(2.2)
+            .foregroundStyle(StyleTheme.textSecondary)
+
+          Text(title)
+            .font(.custom("Times New Roman", size: 126))
+            .lineSpacing(63)
+            .tracking(0.9)
+            .lineLimit(2)
+            .minimumScaleFactor(0.25)
+            .foregroundStyle(StyleTheme.textPrimary)
+
+          Text(description)
+            .font(.body)
+            .foregroundStyle(StyleTheme.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 4)
+
+          Button {
+            action()
+          } label: {
+            editorialActionLabel(actionTitle)
+          }
+          .buttonStyle(.plain)
+          .padding(.top, 6)
+        }
+        .padding(.horizontal, 18)
+        .padding(.bottom, 28)
+      }
+      .frame(width: proxy.size.width, height: proxy.size.height)
+      .punkTexture(0.34)
+    }
+    .ignoresSafeArea()
+  }
+
+  private func editorialActionLabel(_ title: String) -> some View {
+    HStack(spacing: 10) {
+      Text(title.uppercased())
+        .font(.headline)
+        .tracking(1.1)
+      Image(systemName: "arrow.right")
+        .font(.subheadline.weight(.semibold))
+    }
+    .foregroundStyle(StyleTheme.textPrimary)
+    .padding(.bottom, 8)
+    .overlay(alignment: .bottomLeading) {
+      Rectangle()
+        .fill(StyleTheme.accentGradient)
+        .frame(height: 2.5)
     }
   }
 
@@ -1198,20 +1293,19 @@ struct PrototypeRootView: View {
   }
 
   private func tabHeaderButton(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-    let tabFill = isActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.surfaceAltGradient)
     return Button(action: action) {
-      Text(title)
-        .font(.title2)
-        .bold()
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(
-          RoundedRectangle(cornerRadius: 10)
-            .fill(tabFill)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .foregroundStyle(StyleTheme.textPrimary)
-        .punkTexture(0.24)
+      VStack(alignment: .leading, spacing: 6) {
+        Text(title.uppercased())
+          .font(.system(size: 18, weight: isActive ? .bold : .medium))
+          .tracking(1.1)
+          .foregroundStyle(isActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
+
+        Rectangle()
+          .fill(isActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(Color.clear))
+          .frame(height: 2.5)
+      }
+      .padding(.horizontal, 2)
+      .padding(.vertical, 4)
     }
     .buttonStyle(.plain)
   }
@@ -1223,36 +1317,37 @@ struct PrototypeRootView: View {
       .foregroundStyle(StyleTheme.textPrimary)
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
-        let allFill = store.activeBoardFilter == nil ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.surfaceAltGradient)
+        let allIsActive = store.activeBoardFilter == nil
         Button(store.activeBoardFilter == nil ? "[All]" : "All") {
           store.activeBoardFilter = nil
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-          Capsule()
-            .fill(allFill)
-        )
-        .clipShape(Capsule())
-        .foregroundStyle(StyleTheme.textPrimary)
-        .punkTexture(0.23)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .foregroundStyle(allIsActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
+        .overlay(alignment: .bottom) {
+          Rectangle()
+            .fill(allIsActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(Color.clear))
+            .frame(height: 2)
+        }
+        .buttonStyle(.plain)
 
         ForEach(store.selectedBoards) { board in
-          let boardFill = store.activeBoardFilter == board.id ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.surfaceAltGradient)
+          let boardIsActive = store.activeBoardFilter == board.id
           Button(store.activeBoardFilter == board.id ? "[\(board.name)]" : board.name) {
             store.activeBoardFilter = board.id
           }
-          .padding(.horizontal, 14)
-          .padding(.vertical, 10)
-          .background(
-            Capsule()
-              .fill(boardFill)
-          )
-          .clipShape(Capsule())
-          .foregroundStyle(StyleTheme.textPrimary)
-          .punkTexture(0.23)
+          .padding(.horizontal, 8)
+          .padding(.vertical, 6)
+          .foregroundStyle(boardIsActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
+          .overlay(alignment: .bottom) {
+            Rectangle()
+              .fill(boardIsActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(Color.clear))
+              .frame(height: 2)
+          }
+          .buttonStyle(.plain)
         }
       }
+      .padding(.bottom, 2)
     }
   }
 
