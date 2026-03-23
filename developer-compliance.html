@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Developer Compliance - Moodsearch</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 0;
+      background: #f7f7f7;
+      color: #222;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 40px 32px;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 2rem;
+    }
+
+    h2 {
+      margin-top: 2rem;
+      font-size: 1.15rem;
+    }
+
+    ul {
+      padding-left: 1.2rem;
+    }
+
+    .small {
+      color: #666;
+      font-size: 0.95rem;
+    }
+
+    .ok {
+      background: #f2fff4;
+      border: 1px solid #bfecc6;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+
+    .todo {
+      background: #fff7e6;
+      border: 1px solid #ffd98d;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+
+    a {
+      color: #0b57d0;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Developer Compliance (Pinterest API)</h1>
+      <p class="small">Last reviewed: March 23, 2026</p>
+
+      <p>
+        This page maps Pinterest Developer/API Terms to Moodsearch implementation decisions.
+      </p>
+
+      <h2>Allowed use and consent</h2>
+      <ul>
+        <li>Use data only for authorized end user flows.</li>
+        <li>No hidden actions on behalf of users.</li>
+        <li>No automated engagement or bulk actions.</li>
+      </ul>
+      <div class="ok">Implemented in app UX and compliance notice card.</div>
+
+      <h2>Data storage and sharing</h2>
+      <ul>
+        <li>No permanent storage of API-fetched Pinterest data (except campaign analytics where allowed).</li>
+        <li>No sale or broker sharing of Pinterest data.</li>
+        <li>No cross-service identity/data merging.</li>
+      </ul>
+      <div class="ok">Declared in privacy policy and internal compliance checklist.</div>
+
+      <h2>Security and incident response</h2>
+      <ul>
+        <li>Protect API credentials with industry-standard controls.</li>
+        <li>Rapid incident handling and notification obligations.</li>
+      </ul>
+      <div class="todo">Operational runbook and automated breach alert escalation should be finalized before production launch.</div>
+
+      <h2>Technical restrictions</h2>
+      <ul>
+        <li>No scraping or bypassing Pinterest controls.</li>
+        <li>No reverse engineering of Pinterest materials.</li>
+        <li>Follow API updates and version requirements.</li>
+      </ul>
+      <div class="ok">Added to compliance checklist and engineering guidance.</div>
+
+      <h2>Children and sensitive use</h2>
+      <ul>
+        <li>No service intended for children under 13.</li>
+        <li>No deriving non-public personal information (e.g., hidden location inference).</li>
+      </ul>
+
+      <p>
+        <a href="index.html">Back to homepage</a> ·
+        <a href="privacy.html">Privacy Policy</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

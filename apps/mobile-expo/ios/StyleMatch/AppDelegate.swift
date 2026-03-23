@@ -59,6 +59,7 @@ final class PrototypeStore: ObservableObject {
 
   @Published var archivedProductIDs: Set<UUID> = []
   @Published var boughtProductIDs: Set<UUID> = []
+  @Published var hasAcceptedCompliance: Bool = false
 
   let availableDesigners: [String]
   let availableBrands: [String]
@@ -293,6 +294,22 @@ final class PrototypeStore: ObservableObject {
     selectedMoodboard = nil
     archivedProductIDs = []
     boughtProductIDs = []
+    hasAcceptedCompliance = false
+  }
+
+  func acknowledgeCompliance() {
+    hasAcceptedCompliance = true
+  }
+
+  var complianceRules: [String] {
+    [
+      "Only use Pinterest data for the authorized user who connected the account.",
+      "Do not store Pinterest API data permanently (except your campaign analytics).",
+      "No scraping, no automated bulk actions, no hidden actions on behalf of users.",
+      "Do not combine Pinterest data with personal data from other services.",
+      "Do not sell or share Pinterest data with third parties.",
+      "Use API credentials securely and report data breaches quickly."
+    ]
   }
 
   func boardName(for boardID: UUID) -> String {
@@ -744,6 +761,7 @@ struct PrototypeRootView: View {
   @ViewBuilder
   private var appFlow: some View {
     Text("StyleMatch").font(.title2).bold()
+    complianceCard
 
     HStack {
       Button(store.mainTab == .home ? "[Home]" : "Home") { store.mainTab = .home }
@@ -759,6 +777,36 @@ struct PrototypeRootView: View {
     case .archive:
       archiveTab
     }
+  }
+
+  @ViewBuilder
+  private var complianceCard: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text("Pinterest API Compliance")
+        .font(.headline)
+      Text("These rules are applied to this prototype and must stay active in production.")
+        .font(.caption)
+        .foregroundStyle(.secondary)
+
+      ForEach(store.complianceRules, id: \.self) { rule in
+        Text("• \(rule)")
+          .font(.caption)
+      }
+
+      if !store.hasAcceptedCompliance {
+        Button("I understand and will follow these rules") {
+          store.acknowledgeCompliance()
+        }
+        .padding(.top, 4)
+      } else {
+        Text("Compliance acknowledged for this session.")
+          .font(.caption)
+          .foregroundStyle(.green)
+      }
+    }
+    .padding(12)
+    .background(Color(.systemGray6))
+    .clipShape(RoundedRectangle(cornerRadius: 12))
   }
 
   @ViewBuilder
