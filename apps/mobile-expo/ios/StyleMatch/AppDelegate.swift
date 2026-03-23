@@ -2,54 +2,38 @@ import UIKit
 import SwiftUI
 
 enum StyleTheme {
-  // Punk palette from provided color reference.
-  static let bgBase = Color(red: 0.050, green: 0.050, blue: 0.050)
-  static let bgShade = Color(red: 0.090, green: 0.040, blue: 0.055)
-  static let surfaceTone = Color(red: 0.115, green: 0.060, blue: 0.070)
-  static let surfaceToneAlt = Color(red: 0.170, green: 0.070, blue: 0.090)
-  static let borderTone = Color(red: 0.360, green: 0.170, blue: 0.220)
-  static let textPrimary = Color(red: 0.960, green: 0.940, blue: 0.950)
-  static let textSecondary = Color(red: 0.760, green: 0.690, blue: 0.730)
-  static let accent = Color(red: 0.930, green: 0.120, blue: 0.370)
-  static let accentBright = Color(red: 1.000, green: 0.250, blue: 0.470)
-  static let badgeNeutral = Color(red: 0.860, green: 0.860, blue: 0.870)
-  static let blackCTA = Color(red: 0.040, green: 0.040, blue: 0.040)
+  // Dark gray base; gradient reserved as accent.
+  static let bg = Color(red: 0.09, green: 0.09, blue: 0.09)
+  static let surface = Color(red: 0.13, green: 0.13, blue: 0.13)
+  static let surfaceAlt = Color(red: 0.17, green: 0.17, blue: 0.17)
+  static let border = Color.white.opacity(0.08)
+  static let placeholder = Color(red: 0.46, green: 0.46, blue: 0.46)
 
-  static let bgGradient = LinearGradient(
-    colors: [bgBase, bgShade, Color(red: 0.320, green: 0.060, blue: 0.170), Color(red: 0.640, green: 0.090, blue: 0.200)],
-    startPoint: .topLeading,
-    endPoint: .bottomTrailing
-  )
+  static let textPrimary = Color(red: 0.93, green: 0.93, blue: 0.93)
+  static let textSecondary = Color(red: 0.78, green: 0.78, blue: 0.78)
+  static let textTertiary = Color(red: 0.64, green: 0.64, blue: 0.64)
+  static let badgeNeutral = Color(red: 0.85, green: 0.85, blue: 0.85)
 
-  static let surfaceGradient = LinearGradient(
-    colors: [surfaceTone, surfaceToneAlt, Color(red: 0.360, green: 0.080, blue: 0.180)],
-    startPoint: .topLeading,
-    endPoint: .bottomTrailing
-  )
-
-  static let surfaceAltGradient = LinearGradient(
-    colors: [Color(red: 0.140, green: 0.070, blue: 0.080), Color(red: 0.270, green: 0.090, blue: 0.130), Color(red: 0.500, green: 0.100, blue: 0.180)],
-    startPoint: .top,
-    endPoint: .bottomTrailing
-  )
-
-  static let borderGradient = LinearGradient(
-    colors: [borderTone, Color(red: 0.700, green: 0.220, blue: 0.370)],
-    startPoint: .leading,
-    endPoint: .trailing
-  )
-
+  static let accent = Color(red: 0.93, green: 0.14, blue: 0.37)
+  static let accentBright = Color(red: 1.00, green: 0.28, blue: 0.48)
   static let accentGradient = LinearGradient(
-    colors: [accent, Color(red: 0.990, green: 0.220, blue: 0.380), Color(red: 1.000, green: 0.260, blue: 0.290)],
+    colors: [Color(red: 0.99, green: 0.24, blue: 0.48), Color(red: 0.96, green: 0.15, blue: 0.36), Color(red: 0.95, green: 0.20, blue: 0.29)],
     startPoint: .topLeading,
     endPoint: .bottomTrailing
   )
-
-  static let ctaGradient = LinearGradient(
-    colors: [Color(red: 0.190, green: 0.040, blue: 0.080), Color(red: 0.430, green: 0.070, blue: 0.130), Color(red: 0.700, green: 0.120, blue: 0.190)],
+  static let h1Gradient = LinearGradient(
+    colors: [Color(red: 1.00, green: 0.34, blue: 0.54), Color(red: 0.97, green: 0.18, blue: 0.40)],
     startPoint: .leading,
     endPoint: .trailing
   )
+
+  // Compatibility aliases for existing view code.
+  static let bgGradient = LinearGradient(colors: [bg, bg], startPoint: .top, endPoint: .bottom)
+  static let surfaceGradient = LinearGradient(colors: [surface, surface], startPoint: .top, endPoint: .bottom)
+  static let surfaceAltGradient = LinearGradient(colors: [surfaceAlt, surfaceAlt], startPoint: .top, endPoint: .bottom)
+  static let borderGradient = LinearGradient(colors: [border, border], startPoint: .leading, endPoint: .trailing)
+  static let ctaGradient = accentGradient
+  static let blackCTA = surfaceAlt
 }
 
 struct NoiseOverlay: View {
@@ -155,22 +139,19 @@ struct WireframeImageBlock: View {
   var body: some View {
     ZStack {
       RoundedRectangle(cornerRadius: cornerRadius)
-        .fill(StyleTheme.surfaceAltGradient)
-
-      RoundedRectangle(cornerRadius: cornerRadius)
-        .stroke(StyleTheme.borderGradient, lineWidth: 1)
+        .fill(StyleTheme.placeholder)
 
       VStack(spacing: 4) {
         Image(systemName: "photo")
           .font(.system(size: 16, weight: .semibold))
-          .foregroundStyle(StyleTheme.textSecondary)
+          .foregroundStyle(StyleTheme.textTertiary)
         Text(label)
           .font(.caption2)
-          .foregroundStyle(StyleTheme.textSecondary)
+          .foregroundStyle(StyleTheme.textTertiary)
       }
     }
     .frame(width: width, height: height)
-    .punkTexture(0.32)
+    .punkTexture(0.18)
   }
 }
 
@@ -1186,7 +1167,7 @@ struct PrototypeRootView: View {
             .tracking(0.9)
             .lineLimit(2)
             .minimumScaleFactor(0.25)
-            .foregroundStyle(StyleTheme.textPrimary)
+            .foregroundStyle(StyleTheme.h1Gradient)
 
           Text(description)
             .font(.body)
@@ -1269,40 +1250,53 @@ struct PrototypeRootView: View {
   }
 
   private var stickyTabHeader: some View {
-    HStack(spacing: 8) {
-      tabHeaderButton(title: "Home", isActive: store.mainTab == .home) {
+    VStack(alignment: .leading, spacing: 8) {
+      Button {
         store.mainTab = .home
+      } label: {
+        Text("Home")
+          .font(.custom("Times New Roman", size: 78))
+          .tracking(1.0)
+          .lineLimit(1)
+          .minimumScaleFactor(0.45)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .foregroundStyle(store.mainTab == .home ? AnyShapeStyle(StyleTheme.h1Gradient) : AnyShapeStyle(StyleTheme.textPrimary))
       }
-      tabHeaderButton(title: "Moodboards", isActive: store.mainTab == .moodboards) {
-        store.mainTab = .moodboards
-      }
-      tabHeaderButton(title: "Archive", isActive: store.mainTab == .archive) {
-        store.mainTab = .archive
+      .buttonStyle(.plain)
+
+      HStack(spacing: 18) {
+        secondaryTabButton(title: "Moodboards", isActive: store.mainTab == .moodboards) {
+          store.mainTab = .moodboards
+        }
+        secondaryTabButton(title: "Archive", isActive: store.mainTab == .archive) {
+          store.mainTab = .archive
+        }
       }
     }
     .padding(.horizontal, 16)
-    .padding(.vertical, 10)
+    .padding(.top, 6)
+    .padding(.bottom, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(StyleTheme.surfaceGradient)
-    .punkTexture(0.3)
+    .background(StyleTheme.bg)
+    .punkTexture(0.2)
     .overlay(alignment: .bottom) {
       Rectangle()
-        .fill(StyleTheme.borderGradient)
+        .fill(StyleTheme.border)
         .frame(height: 1)
     }
   }
 
-  private func tabHeaderButton(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+  private func secondaryTabButton(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
     return Button(action: action) {
       VStack(alignment: .leading, spacing: 6) {
         Text(title.uppercased())
-          .font(.system(size: 18, weight: isActive ? .bold : .medium))
+          .font(.system(size: 19, weight: isActive ? .semibold : .medium))
           .tracking(1.1)
           .foregroundStyle(isActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
 
         Rectangle()
           .fill(isActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(Color.clear))
-          .frame(height: 2.5)
+          .frame(height: 2.2)
       }
       .padding(.horizontal, 2)
       .padding(.vertical, 4)
@@ -1314,7 +1308,7 @@ struct PrototypeRootView: View {
   private var boardFilterBar: some View {
     Text("Moodboard Filter")
       .font(.system(.headline, design: .default))
-      .foregroundStyle(StyleTheme.textPrimary)
+      .foregroundStyle(StyleTheme.textSecondary)
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
         let allIsActive = store.activeBoardFilter == nil
@@ -1377,7 +1371,7 @@ struct PrototypeRootView: View {
       .foregroundStyle(StyleTheme.textPrimary)
     Text("All selected moodboards with visual covers. Open one to see pins and bought items.")
       .font(.caption)
-      .foregroundStyle(StyleTheme.textSecondary)
+      .foregroundStyle(StyleTheme.textTertiary)
     boardFilterBar
 
     if store.visibleBoardsForTabs.isEmpty {
@@ -1456,7 +1450,7 @@ struct PrototypeRootView: View {
             .foregroundStyle(StyleTheme.textSecondary)
           Text("Score \(store.score(for: product))")
             .font(.caption2)
-            .foregroundStyle(StyleTheme.textSecondary)
+            .foregroundStyle(StyleTheme.textTertiary)
         }
         .frame(width: infoWidth, alignment: .leading)
       }
