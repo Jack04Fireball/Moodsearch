@@ -2,17 +2,54 @@ import UIKit
 import SwiftUI
 
 enum StyleTheme {
-  // Palette sampled from app icon: near-black base + muted deep maroon accents.
-  static let bg = Color(red: 0.050, green: 0.050, blue: 0.050)
-  static let surface = Color(red: 0.080, green: 0.078, blue: 0.078)
-  static let surfaceAlt = Color(red: 0.110, green: 0.105, blue: 0.105)
-  static let border = Color(red: 0.205, green: 0.190, blue: 0.190)
-  static let textPrimary = Color(red: 0.935, green: 0.930, blue: 0.925)
-  static let textSecondary = Color(red: 0.690, green: 0.680, blue: 0.680)
-  static let accent = Color(red: 0.220, green: 0.094, blue: 0.125)
-  static let accentBright = Color(red: 0.320, green: 0.125, blue: 0.157)
-  static let badgeNeutral = Color(red: 0.830, green: 0.830, blue: 0.840)
-  static let blackCTA = Color(red: 0.020, green: 0.020, blue: 0.020)
+  // Punk palette from provided color reference.
+  static let bgBase = Color(red: 0.050, green: 0.050, blue: 0.050)
+  static let bgShade = Color(red: 0.090, green: 0.040, blue: 0.055)
+  static let surfaceTone = Color(red: 0.115, green: 0.060, blue: 0.070)
+  static let surfaceToneAlt = Color(red: 0.170, green: 0.070, blue: 0.090)
+  static let borderTone = Color(red: 0.360, green: 0.170, blue: 0.220)
+  static let textPrimary = Color(red: 0.960, green: 0.940, blue: 0.950)
+  static let textSecondary = Color(red: 0.760, green: 0.690, blue: 0.730)
+  static let accent = Color(red: 0.930, green: 0.120, blue: 0.370)
+  static let accentBright = Color(red: 1.000, green: 0.250, blue: 0.470)
+  static let badgeNeutral = Color(red: 0.860, green: 0.860, blue: 0.870)
+  static let blackCTA = Color(red: 0.040, green: 0.040, blue: 0.040)
+
+  static let bgGradient = LinearGradient(
+    colors: [bgBase, bgShade, Color(red: 0.320, green: 0.060, blue: 0.170), Color(red: 0.640, green: 0.090, blue: 0.200)],
+    startPoint: .topLeading,
+    endPoint: .bottomTrailing
+  )
+
+  static let surfaceGradient = LinearGradient(
+    colors: [surfaceTone, surfaceToneAlt, Color(red: 0.360, green: 0.080, blue: 0.180)],
+    startPoint: .topLeading,
+    endPoint: .bottomTrailing
+  )
+
+  static let surfaceAltGradient = LinearGradient(
+    colors: [Color(red: 0.140, green: 0.070, blue: 0.080), Color(red: 0.270, green: 0.090, blue: 0.130), Color(red: 0.500, green: 0.100, blue: 0.180)],
+    startPoint: .top,
+    endPoint: .bottomTrailing
+  )
+
+  static let borderGradient = LinearGradient(
+    colors: [borderTone, Color(red: 0.700, green: 0.220, blue: 0.370)],
+    startPoint: .leading,
+    endPoint: .trailing
+  )
+
+  static let accentGradient = LinearGradient(
+    colors: [accent, Color(red: 0.990, green: 0.220, blue: 0.380), Color(red: 1.000, green: 0.260, blue: 0.290)],
+    startPoint: .topLeading,
+    endPoint: .bottomTrailing
+  )
+
+  static let ctaGradient = LinearGradient(
+    colors: [Color(red: 0.190, green: 0.040, blue: 0.080), Color(red: 0.430, green: 0.070, blue: 0.130), Color(red: 0.700, green: 0.120, blue: 0.190)],
+    startPoint: .leading,
+    endPoint: .trailing
+  )
 }
 
 struct NoiseOverlay: View {
@@ -22,28 +59,48 @@ struct NoiseOverlay: View {
         let w = max(1, Int(size.width))
         let h = max(1, Int(size.height))
 
-        let brightDots = max(900, Int(size.width * size.height / 760))
+        let brightDots = max(1800, Int(size.width * size.height / 420))
         for i in 0..<brightDots {
           let x = CGFloat((i * 73 + 17) % w)
           let y = CGFloat((i * 97 + 29) % h)
-          let alpha = 0.012 + Double((i * 31) % 19) / 150.0
-          let rect = CGRect(x: x, y: y, width: 1.2, height: 1.2)
+          let alpha = 0.018 + Double((i * 31) % 19) / 115.0
+          let rect = CGRect(x: x, y: y, width: 1.15, height: 1.15)
           context.fill(Path(rect), with: .color(.white.opacity(alpha)))
         }
 
-        let darkDots = max(700, Int(size.width * size.height / 980))
+        let darkDots = max(1400, Int(size.width * size.height / 520))
         for i in 0..<darkDots {
           let x = CGFloat((i * 83 + 41) % w)
           let y = CGFloat((i * 59 + 13) % h)
-          let alpha = 0.010 + Double((i * 23) % 17) / 170.0
-          let rect = CGRect(x: x, y: y, width: 1.1, height: 1.1)
+          let alpha = 0.014 + Double((i * 23) % 17) / 130.0
+          let rect = CGRect(x: x, y: y, width: 1.0, height: 1.0)
           context.fill(Path(rect), with: .color(.black.opacity(alpha)))
         }
       }
       .blendMode(.overlay)
-      .opacity(0.52)
+      .opacity(0.62)
     }
     .allowsHitTesting(false)
+  }
+}
+
+struct PunkTextureModifier: ViewModifier {
+  let opacity: Double
+
+  func body(content: Content) -> some View {
+    content
+      .overlay(
+        NoiseOverlay()
+          .opacity(opacity)
+          .blendMode(.overlay)
+          .allowsHitTesting(false)
+      )
+  }
+}
+
+extension View {
+  func punkTexture(_ opacity: Double = 0.34) -> some View {
+    modifier(PunkTextureModifier(opacity: opacity))
   }
 }
 
@@ -98,10 +155,10 @@ struct WireframeImageBlock: View {
   var body: some View {
     ZStack {
       RoundedRectangle(cornerRadius: cornerRadius)
-        .fill(StyleTheme.surfaceAlt)
+        .fill(StyleTheme.surfaceAltGradient)
 
       RoundedRectangle(cornerRadius: cornerRadius)
-        .stroke(StyleTheme.border, lineWidth: 1)
+        .stroke(StyleTheme.borderGradient, lineWidth: 1)
 
       VStack(spacing: 4) {
         Image(systemName: "photo")
@@ -113,6 +170,7 @@ struct WireframeImageBlock: View {
       }
     }
     .frame(width: width, height: height)
+    .punkTexture(0.32)
   }
 }
 
@@ -757,14 +815,16 @@ struct BoardSettingsView: View {
             }
           }
         }
-      }
-      .padding(16)
     }
-    .background(StyleTheme.bg)
+    .padding(16)
+    }
+    .background(StyleTheme.bgGradient)
+    .punkTexture(0.28)
   }
 
   private func settingsChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
-    Button(action: action) {
+    let chipFill = selected ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.surfaceAltGradient)
+    return Button(action: action) {
       HStack {
         Text(title)
           .lineLimit(1)
@@ -772,9 +832,13 @@ struct BoardSettingsView: View {
         Image(systemName: selected ? "checkmark.circle.fill" : "circle")
       }
       .padding(10)
-      .background(selected ? StyleTheme.accent : StyleTheme.surfaceAlt)
+      .background(
+        RoundedRectangle(cornerRadius: 10)
+          .fill(chipFill)
+      )
       .clipShape(RoundedRectangle(cornerRadius: 10))
       .foregroundStyle(StyleTheme.textPrimary)
+      .punkTexture(0.24)
     }
     .buttonStyle(.plain)
   }
@@ -797,7 +861,8 @@ struct BoardDetailView: View {
         .padding(.horizontal, 16)
         .padding(.top, 10)
         .padding(.bottom, 8)
-        .background(StyleTheme.surface)
+        .background(StyleTheme.surfaceGradient)
+        .punkTexture(0.25)
 
         TabView(selection: $pageSelection) {
           pinsPage
@@ -900,8 +965,9 @@ struct BoardDetailView: View {
               Spacer()
             }
             .padding(10)
-            .background(StyleTheme.surfaceAlt)
+            .background(StyleTheme.surfaceAltGradient)
             .clipShape(RoundedRectangle(cornerRadius: 10))
+            .punkTexture(0.24)
           }
         }
       }
@@ -942,7 +1008,7 @@ struct PrototypeRootView: View {
   var body: some View {
     NavigationStack {
       ZStack {
-        StyleTheme.bg.ignoresSafeArea()
+        StyleTheme.bgGradient.ignoresSafeArea()
         NoiseOverlay().ignoresSafeArea()
 
         Group {
@@ -984,9 +1050,10 @@ struct PrototypeRootView: View {
       }
       .frame(maxWidth: .infinity)
       .padding(.vertical, 14)
-      .background(StyleTheme.blackCTA)
+      .background(StyleTheme.ctaGradient)
       .foregroundStyle(StyleTheme.textPrimary)
       .clipShape(RoundedRectangle(cornerRadius: 12))
+      .punkTexture(0.3)
 
     case .login:
       setupHeroSection(
@@ -999,15 +1066,18 @@ struct PrototypeRootView: View {
       }
       .frame(maxWidth: .infinity)
       .padding(.vertical, 14)
-      .background(StyleTheme.blackCTA)
+      .background(StyleTheme.ctaGradient)
       .foregroundStyle(StyleTheme.textPrimary)
       .clipShape(RoundedRectangle(cornerRadius: 12))
+      .punkTexture(0.3)
 
     case .boards:
       Text("Select moodboard")
-        .font(.custom("Times New Roman", size: 42))
-        .lineSpacing(8.4)
+        .font(.custom("Times New Roman", size: 126))
+        .lineSpacing(63)
         .tracking(0.6)
+        .lineLimit(2)
+        .minimumScaleFactor(0.25)
         .foregroundStyle(StyleTheme.textPrimary)
       TextField("Search board name", text: $store.boardSearch)
         .textFieldStyle(.roundedBorder)
@@ -1034,11 +1104,12 @@ struct PrototypeRootView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(8)
-            .background(StyleTheme.surface)
+            .background(StyleTheme.surfaceGradient)
             .overlay(
               RoundedRectangle(cornerRadius: 12)
-                .stroke(isSelected ? StyleTheme.accent : StyleTheme.border, lineWidth: 2)
+                .stroke(isSelected ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.borderGradient), lineWidth: 2)
             )
+            .punkTexture(0.3)
           }
           .buttonStyle(.plain)
         }
@@ -1052,9 +1123,10 @@ struct PrototypeRootView: View {
       .disabled(store.selectedBoardIDs.isEmpty)
       .frame(maxWidth: .infinity)
       .padding(.vertical, 16)
-      .background(StyleTheme.blackCTA)
+      .background(StyleTheme.ctaGradient)
       .foregroundStyle(StyleTheme.textPrimary)
       .clipShape(RoundedRectangle(cornerRadius: 12))
+      .punkTexture(0.3)
 
     case .done:
       EmptyView()
@@ -1064,9 +1136,11 @@ struct PrototypeRootView: View {
   private func setupHeroSection(title: String, imageLabel: String, description: String) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text(title)
-        .font(.custom("Times New Roman", size: 42))
-        .lineSpacing(8.4)
+        .font(.custom("Times New Roman", size: 126))
+        .lineSpacing(63)
         .tracking(0.6)
+        .lineLimit(2)
+        .minimumScaleFactor(0.25)
         .foregroundStyle(StyleTheme.textPrimary)
       WireframeImageBlock(height: 190, cornerRadius: 14, label: imageLabel)
       Text(description)
@@ -1114,24 +1188,30 @@ struct PrototypeRootView: View {
     .padding(.horizontal, 16)
     .padding(.vertical, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(StyleTheme.surface)
+    .background(StyleTheme.surfaceGradient)
+    .punkTexture(0.3)
     .overlay(alignment: .bottom) {
       Rectangle()
-        .fill(StyleTheme.border)
+        .fill(StyleTheme.borderGradient)
         .frame(height: 1)
     }
   }
 
   private func tabHeaderButton(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-    Button(action: action) {
+    let tabFill = isActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.surfaceAltGradient)
+    return Button(action: action) {
       Text(title)
         .font(.title2)
         .bold()
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(isActive ? StyleTheme.accent : StyleTheme.surfaceAlt)
+        .background(
+          RoundedRectangle(cornerRadius: 10)
+            .fill(tabFill)
+        )
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .foregroundStyle(StyleTheme.textPrimary)
+        .punkTexture(0.24)
     }
     .buttonStyle(.plain)
   }
@@ -1143,24 +1223,34 @@ struct PrototypeRootView: View {
       .foregroundStyle(StyleTheme.textPrimary)
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
+        let allFill = store.activeBoardFilter == nil ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.surfaceAltGradient)
         Button(store.activeBoardFilter == nil ? "[All]" : "All") {
           store.activeBoardFilter = nil
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(store.activeBoardFilter == nil ? StyleTheme.accent : StyleTheme.surfaceAlt)
+        .background(
+          Capsule()
+            .fill(allFill)
+        )
         .clipShape(Capsule())
         .foregroundStyle(StyleTheme.textPrimary)
+        .punkTexture(0.23)
 
         ForEach(store.selectedBoards) { board in
+          let boardFill = store.activeBoardFilter == board.id ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.surfaceAltGradient)
           Button(store.activeBoardFilter == board.id ? "[\(board.name)]" : board.name) {
             store.activeBoardFilter = board.id
           }
           .padding(.horizontal, 14)
           .padding(.vertical, 10)
-          .background(store.activeBoardFilter == board.id ? StyleTheme.accent : StyleTheme.surfaceAlt)
+          .background(
+            Capsule()
+              .fill(boardFill)
+          )
           .clipShape(Capsule())
           .foregroundStyle(StyleTheme.textPrimary)
+          .punkTexture(0.23)
         }
       }
     }
@@ -1219,12 +1309,13 @@ struct PrototypeRootView: View {
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(8)
-          .background(StyleTheme.surface)
+          .background(StyleTheme.surfaceGradient)
           .overlay(
-            RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.border, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.borderGradient, lineWidth: 1)
           )
           .contentShape(Rectangle())
           .frame(minHeight: 300)
+          .punkTexture(0.3)
         }
         .buttonStyle(.plain)
       }
@@ -1277,10 +1368,11 @@ struct PrototypeRootView: View {
       .frame(height: cardHeight)
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(8)
-      .background(StyleTheme.surface)
+      .background(StyleTheme.surfaceGradient)
       .overlay(
-        RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.border, lineWidth: 1)
+        RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.borderGradient, lineWidth: 1)
       )
+      .punkTexture(0.3)
     }
     .frame(height: 186)
   }
@@ -1328,10 +1420,11 @@ struct PrototypeRootView: View {
       .frame(height: cardHeight)
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(8)
-      .background(StyleTheme.surface)
+      .background(StyleTheme.surfaceGradient)
       .overlay(
-        RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.border, lineWidth: 1)
+        RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.borderGradient, lineWidth: 1)
       )
+      .punkTexture(0.3)
     }
     .frame(height: 170)
   }
@@ -1381,8 +1474,9 @@ struct ProductDetailSheetView: View {
             Divider()
             infoRow(title: "Moodboard", value: store.boardName(for: product.boardID))
           }
-          .background(StyleTheme.surfaceAlt)
+          .background(StyleTheme.surfaceAltGradient)
           .clipShape(RoundedRectangle(cornerRadius: 12))
+          .punkTexture(0.28)
 
           Text("Buy now")
             .font(.title2)
@@ -1396,8 +1490,9 @@ struct ProductDetailSheetView: View {
           .foregroundStyle(StyleTheme.textPrimary)
           .frame(maxWidth: .infinity)
           .padding(.vertical, 14)
-          .background(StyleTheme.blackCTA)
+          .background(StyleTheme.ctaGradient)
           .clipShape(RoundedRectangle(cornerRadius: 12))
+          .punkTexture(0.3)
 
           HStack(spacing: 24) {
             iconAction(symbol: "hand.thumbsup", label: "Like") {}
@@ -1420,7 +1515,7 @@ struct ProductDetailSheetView: View {
         .padding(16)
       }
       .navigationTitle("Product")
-      .toolbarBackground(StyleTheme.surface, for: .navigationBar)
+      .toolbarBackground(StyleTheme.surfaceGradient, for: .navigationBar)
       .toolbarBackground(.visible, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
