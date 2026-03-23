@@ -44,18 +44,18 @@ type BoardSettings = {
   country: "all" | "CH" | "EU";
 };
 
-const BUILD_MARKER = "Build 2005 - Gray Placeholder";
+const BUILD_MARKER = "Build 2006 - Wireframe Gray";
 
 const PALETTE = {
   bg: "#F6F6F6",
   surface: "#FFFFFF",
   border: "#E6E6E6",
   text: "#121212",
-  textSoft: "#666666",
-  accent: "#E60023",
+  textSoft: "#707070",
+  accent: "#6F6F6F",
   accentText: "#FFFFFF",
-  chip: "#EFEFEF",
-  chipActive: "#111111",
+  chip: "#E3E3E3",
+  chipActive: "#7A7A7A",
   chipActiveText: "#FFFFFF",
   placeholder: "#CFCFCF",
   placeholderDark: "#B8B8B8",
