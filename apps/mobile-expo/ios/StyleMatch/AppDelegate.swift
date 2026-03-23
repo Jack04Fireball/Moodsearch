@@ -620,9 +620,6 @@ struct PrototypeRootView: View {
         if store.setupStep != .done {
           ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-              Text("Wireframe Build 5")
-                .font(.caption)
-                .foregroundStyle(.secondary)
               setupFlow
             }
             .padding(16)
@@ -631,9 +628,9 @@ struct PrototypeRootView: View {
           appFlow
         }
       }
-      .navigationTitle("StyleMatch Prototype")
+      .toolbar(.hidden, for: .navigationBar)
       .sheet(item: $store.selectedProduct) { product in
-        productDetailSheet(product)
+        ProductDetailSheetView(store: store, product: product)
       }
       .sheet(item: $store.selectedMoodboard) { board in
         BoardDetailView(store: store, board: board)
@@ -746,10 +743,6 @@ struct PrototypeRootView: View {
       LazyVStack(alignment: .leading, spacing: 14, pinnedViews: [.sectionHeaders]) {
         Section {
           VStack(alignment: .leading, spacing: 14) {
-            Text("Wireframe Build 5")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-
             switch store.mainTab {
             case .home:
               homeTab
@@ -795,7 +788,7 @@ struct PrototypeRootView: View {
   private func tabHeaderButton(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Text(title)
-        .font(.title3)
+        .font(.title2)
         .bold()
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
@@ -834,8 +827,6 @@ struct PrototypeRootView: View {
 
   @ViewBuilder
   private var homeTab: some View {
-    Text("Home: all new offers").font(.headline)
-
     boardFilterBar
 
     if store.homeProducts.isEmpty {
@@ -896,11 +887,22 @@ struct PrototypeRootView: View {
 
   private func homeProductCard(_ product: Product) -> some View {
     GeometryReader { proxy in
-      let infoWidth = max(125, proxy.size.width * 0.34)
-      let imageWidth = max(140, proxy.size.width - infoWidth - 16)
+      let cardHeight: CGFloat = 170
+      let infoWidth = max(126, proxy.size.width * 0.3)
+      let visualWidth = max(170, proxy.size.width - infoWidth - 18)
+      let bigImageWidth = max(102, visualWidth * 0.62)
+      let stackedWidth = max(58, visualWidth - bigImageWidth - 8)
+      let smallImageHeight = (cardHeight - 8) / 2
 
       HStack(spacing: 10) {
-        WireframeImageBlock(width: imageWidth, height: 138, cornerRadius: 10, label: "Product")
+        HStack(spacing: 8) {
+          WireframeImageBlock(width: bigImageWidth, height: cardHeight, cornerRadius: 10, label: "Main")
+          VStack(spacing: 8) {
+            WireframeImageBlock(width: stackedWidth, height: smallImageHeight, cornerRadius: 10, label: "Alt")
+            WireframeImageBlock(width: stackedWidth, height: smallImageHeight, cornerRadius: 10, label: "Alt")
+          }
+        }
+        .frame(width: visualWidth, alignment: .leading)
 
         VStack(alignment: .leading, spacing: 4) {
           Text("NEW")
@@ -924,6 +926,7 @@ struct PrototypeRootView: View {
         }
         .frame(width: infoWidth, alignment: .leading)
       }
+      .frame(height: cardHeight)
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(8)
       .background(Color(.systemBackground))
@@ -931,7 +934,7 @@ struct PrototypeRootView: View {
         RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.35), lineWidth: 1)
       )
     }
-    .frame(height: 154)
+    .frame(height: 186)
   }
 
   @ViewBuilder
@@ -963,33 +966,87 @@ struct PrototypeRootView: View {
     }
   }
 
-  private func productDetailSheet(_ product: Product) -> some View {
+}
+
+struct ProductDetailSheetView: View {
+  @ObservedObject var store: PrototypeStore
+  let product: Product
+  @State private var currentImageIndex = 0
+
+  private var galleryLabels: [String] {
+    ["Product 1", "Product 2", "Product 3", "Product 4"]
+  }
+
+  var body: some View {
     NavigationStack {
-      VStack(alignment: .leading, spacing: 12) {
-        Text("Product Detail").font(.title3).bold()
-        Text(product.title)
-        Text("CHF \(product.priceCHF) · \(product.shop)")
-        Text("Brand: \(product.brand)")
-        Text("Designer: \(product.designer)")
-
-        Button("Buy now") {
-          // Placeholder: in MVP this opens the product in store with selected size.
-        }
-
-        HStack {
-          Button("Like") {}
-          Button("Dislike") {}
-          Button(store.archivedProductIDs.contains(product.id) ? "Unarchive" : "Archive") {
-            store.toggleArchive(product)
+      ScrollView {
+        VStack(alignment: .leading, spacing: 16) {
+          TabView(selection: $currentImageIndex) {
+            ForEach(Array(galleryLabels.enumerated()), id: \.offset) { index, label in
+              WireframeImageBlock(height: 290, cornerRadius: 14, label: label)
+                .padding(.horizontal, 2)
+                .tag(index)
+            }
           }
-          Button(store.boughtProductIDs.contains(product.id) ? "Unmark bought" : "Mark as bought") {
-            store.toggleBought(product)
-          }
-        }
+          .frame(height: 300)
+          .tabViewStyle(.page(indexDisplayMode: .automatic))
 
-        Spacer()
+          Text(product.title)
+            .font(.title3)
+            .bold()
+
+          Text("Curated from your moodboard style. This product is ranked higher because fit, shape and overall vibe align with your current board direction.")
+            .font(.body)
+            .foregroundStyle(.secondary)
+
+          VStack(spacing: 0) {
+            infoRow(title: "Price", value: "CHF \(product.priceCHF)")
+            Divider()
+            infoRow(title: "Brand", value: product.brand)
+            Divider()
+            infoRow(title: "Designer", value: product.designer)
+            Divider()
+            infoRow(title: "Shop", value: product.shop)
+            Divider()
+            infoRow(title: "Moodboard", value: store.boardName(for: product.boardID))
+          }
+          .background(Color(.systemGray6))
+          .clipShape(RoundedRectangle(cornerRadius: 12))
+
+          Text("Buy now")
+            .font(.title2)
+            .bold()
+
+          Button("Buy now") {
+            // Placeholder: in MVP this opens the product in store with selected size.
+          }
+          .font(.headline)
+          .foregroundStyle(.white)
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 14)
+          .background(Color.black)
+          .clipShape(RoundedRectangle(cornerRadius: 12))
+
+          HStack(spacing: 24) {
+            iconAction(symbol: "hand.thumbsup", label: "Like") {}
+            iconAction(symbol: "hand.thumbsdown", label: "Dislike") {}
+            iconAction(
+              symbol: store.archivedProductIDs.contains(product.id) ? "archivebox.fill" : "archivebox",
+              label: "Archive"
+            ) {
+              store.toggleArchive(product)
+            }
+            iconAction(
+              symbol: store.boughtProductIDs.contains(product.id) ? "bag.fill" : "bag",
+              label: "Bought"
+            ) {
+              store.toggleBought(product)
+            }
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(16)
       }
-      .padding(16)
       .navigationTitle("Product")
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
@@ -997,6 +1054,33 @@ struct PrototypeRootView: View {
         }
       }
     }
+  }
+
+  private func infoRow(title: String, value: String) -> some View {
+    HStack(alignment: .firstTextBaseline) {
+      Text(title)
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+      Spacer()
+      Text(value)
+        .font(.subheadline)
+        .bold()
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 10)
+  }
+
+  private func iconAction(symbol: String, label: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      VStack(spacing: 6) {
+        Image(systemName: symbol)
+          .font(.system(size: 20, weight: .semibold))
+        Text(label)
+          .font(.caption2)
+      }
+      .foregroundStyle(.primary)
+    }
+    .buttonStyle(.plain)
   }
 }
 
