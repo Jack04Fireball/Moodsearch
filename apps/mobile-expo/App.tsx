@@ -44,6 +44,8 @@ type BoardSettings = {
   country: "all" | "CH" | "EU";
 };
 
+const BUILD_MARKER = "Build 2005 - Gray Placeholder";
+
 const PALETTE = {
   bg: "#F6F6F6",
   surface: "#FFFFFF",
@@ -478,6 +480,7 @@ export default function App() {
       <View style={styles.flowCard}>
         <Text style={styles.heroTitle}>StyleMatch</Text>
         <Text style={styles.heroSubtitle}>Pinterest-like prototype flow</Text>
+        <Text style={styles.bodySoft}>{BUILD_MARKER}</Text>
 
         <PlaceholderBlock height={220} radius={20} />
 
@@ -1080,6 +1083,7 @@ export default function App() {
         <View style={styles.mainTopBar}>
           <Text style={styles.brand}>StyleMatch</Text>
           <Text style={styles.bodySoft}>Prototype (gray placeholders only)</Text>
+          <Text style={styles.bodySoft}>{BUILD_MARKER}</Text>
         </View>
 
         {activeTab === "home" && renderHome()}
