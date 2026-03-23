@@ -944,11 +944,9 @@ struct PrototypeRootView: View {
       .clipShape(RoundedRectangle(cornerRadius: 12))
 
     case .boards:
-      setupHeroSection(
-        title: "Select Moodboards",
-        imageLabel: "Moodboards",
-        description: "Choose one or more moodboards. You can configure designer, brand, price and quality later for each moodboard."
-      )
+      Text("Select moodboard")
+        .font(.largeTitle)
+        .bold()
       TextField("Search board name", text: $store.boardSearch)
         .textFieldStyle(.roundedBorder)
 
