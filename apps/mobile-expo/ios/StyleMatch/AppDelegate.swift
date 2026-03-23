@@ -86,6 +86,12 @@ final class PrototypeStore: ObservableObject {
 
   @Published var moodboardDesignerFocus: [UUID: Set<String>] = [:]
   @Published var customDesignersByBoard: [UUID: [String]] = [:]
+  @Published var moodboardBrandFocus: [UUID: Set<String>] = [:]
+  @Published var customBrandsByBoard: [UUID: [String]] = [:]
+  @Published var moodboardPriceMin: [UUID: Double] = [:]
+  @Published var moodboardPriceMax: [UUID: Double] = [:]
+  @Published var moodboardQualityFocus: [UUID: Set<String>] = [:]
+  @Published var moodboardCountryFocus: [UUID: Set<String>] = [:]
 
   @Published var activeBoardFilter: UUID? = nil
   @Published var selectedProduct: Product? = nil
@@ -97,6 +103,8 @@ final class PrototypeStore: ObservableObject {
 
   let availableDesigners: [String]
   let availableBrands: [String]
+  let availableQualities: [String]
+  let availableCountries: [String]
   let allBoards: [Moodboard]
   let allProducts: [Product]
 
@@ -110,6 +118,8 @@ final class PrototypeStore: ObservableObject {
       "Arket", "COS", "Uniqlo", "Massimo Dutti", "Zalando",
       "Weekday", "Nudie Jeans", "A.P.C.", "Carhartt WIP", "Norse Projects"
     ]
+    self.availableQualities = ["Premium", "Mid-range", "Budget", "Handmade", "Sustainable"]
+    self.availableCountries = ["Italy", "France", "Japan", "Portugal", "Switzerland", "Germany", "UK", "USA"]
 
     let boards = [
       Moodboard(
@@ -229,6 +239,10 @@ final class PrototypeStore: ObservableObject {
     if selectedBrandFocus.contains(product.brand) {
       total += 22
     }
+    let boardBrandFocus = moodboardBrandFocus[product.boardID] ?? []
+    if boardBrandFocus.contains(product.brand) {
+      total += 24
+    }
 
     let boardDesignerFocus = moodboardDesignerFocus[product.boardID] ?? []
     if boardDesignerFocus.contains(product.designer) {
@@ -323,6 +337,12 @@ final class PrototypeStore: ObservableObject {
     priceMax = 2000
     moodboardDesignerFocus = [:]
     customDesignersByBoard = [:]
+    moodboardBrandFocus = [:]
+    customBrandsByBoard = [:]
+    moodboardPriceMin = [:]
+    moodboardPriceMax = [:]
+    moodboardQualityFocus = [:]
+    moodboardCountryFocus = [:]
     activeBoardFilter = nil
     selectedProduct = nil
     selectedMoodboard = nil
@@ -364,6 +384,10 @@ final class PrototypeStore: ObservableObject {
     } else {
       archivedProductIDs.insert(product.id)
     }
+  }
+
+  func archiveFromHomeSwipe(_ product: Product) {
+    archivedProductIDs.insert(product.id)
   }
 
   func toggleBought(_ product: Product) {
@@ -431,24 +455,124 @@ final class PrototypeStore: ObservableObject {
     let custom = customDesignersByBoard[board.id] ?? []
     return Array(Set(base + custom)).sorted()
   }
+
+  func addCustomBrand(for boardID: UUID, name: String) {
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return }
+
+    var current = customBrandsByBoard[boardID] ?? []
+    let alreadyExists = current.contains { $0.localizedCaseInsensitiveCompare(trimmed) == .orderedSame }
+    if !alreadyExists {
+      current.append(trimmed)
+      customBrandsByBoard[boardID] = current
+    }
+  }
+
+  func brandsForBoard(_ board: Moodboard) -> [String] {
+    let custom = customBrandsByBoard[board.id] ?? []
+    return Array(Set(availableBrands + custom)).sorted()
+  }
+
+  func brandFocus(for boardID: UUID) -> Set<String> {
+    moodboardBrandFocus[boardID] ?? []
+  }
+
+  func toggleBrandFocus(for boardID: UUID, brand: String) {
+    var current = moodboardBrandFocus[boardID] ?? []
+    if current.contains(brand) {
+      current.remove(brand)
+    } else {
+      current.insert(brand)
+    }
+    moodboardBrandFocus[boardID] = current
+  }
+
+  func priceMin(for boardID: UUID) -> Double {
+    moodboardPriceMin[boardID] ?? 200
+  }
+
+  func priceMax(for boardID: UUID) -> Double {
+    moodboardPriceMax[boardID] ?? 2000
+  }
+
+  func setPriceMin(for boardID: UUID, value: Double) {
+    let clamped = min(value, priceMax(for: boardID))
+    moodboardPriceMin[boardID] = clamped
+  }
+
+  func setPriceMax(for boardID: UUID, value: Double) {
+    let clamped = max(value, priceMin(for: boardID))
+    moodboardPriceMax[boardID] = clamped
+  }
+
+  func qualityFocus(for boardID: UUID) -> Set<String> {
+    moodboardQualityFocus[boardID] ?? []
+  }
+
+  func toggleQualityFocus(for boardID: UUID, quality: String) {
+    var current = moodboardQualityFocus[boardID] ?? []
+    if current.contains(quality) {
+      current.remove(quality)
+    } else {
+      current.insert(quality)
+    }
+    moodboardQualityFocus[boardID] = current
+  }
+
+  func countryFocus(for boardID: UUID) -> Set<String> {
+    moodboardCountryFocus[boardID] ?? []
+  }
+
+  func toggleCountryFocus(for boardID: UUID, country: String) {
+    var current = moodboardCountryFocus[boardID] ?? []
+    if current.contains(country) {
+      current.remove(country)
+    } else {
+      current.insert(country)
+    }
+    moodboardCountryFocus[boardID] = current
+  }
 }
 
 struct BoardSettingsView: View {
   @ObservedObject var store: PrototypeStore
   let board: Moodboard
   @State private var customDesignerName = ""
+  @State private var customBrandName = ""
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 14) {
+      VStack(alignment: .leading, spacing: 16) {
         Text("Moodboard Settings")
           .font(.title3)
           .bold()
 
-        Text("Designer focus is moodboard specific and boosts ranking only.")
+        Text("Set filters for this moodboard only.")
           .font(.caption)
           .foregroundStyle(.secondary)
 
+        Text("Brand").font(.headline)
+        HStack {
+          TextField("Add brand", text: $customBrandName)
+            .textFieldStyle(.roundedBorder)
+          Button("Add") {
+            store.addCustomBrand(for: board.id, name: customBrandName)
+            customBrandName = ""
+          }
+        }
+
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+          ForEach(store.brandsForBoard(board), id: \.self) { brand in
+            settingsChip(
+              title: brand,
+              selected: store.brandFocus(for: board.id).contains(brand)
+            ) {
+              store.toggleBrandFocus(for: board.id, brand: brand)
+            }
+          }
+        }
+
+        Text("Designer").font(.headline)
         HStack {
           TextField("Add designer", text: $customDesignerName)
             .textFieldStyle(.roundedBorder)
@@ -458,58 +582,146 @@ struct BoardSettingsView: View {
           }
         }
 
-        Text("Designer focus").font(.headline)
-        ForEach(store.designersForBoard(board), id: \.self) { designer in
-          Button {
-            store.toggleDesignerFocus(for: board.id, designer: designer)
-          } label: {
-            HStack {
-              Image(systemName: store.designerFocus(for: board.id).contains(designer) ? "checkmark.circle.fill" : "circle")
-              Text(designer)
-              Spacer()
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+          ForEach(store.designersForBoard(board), id: \.self) { designer in
+            settingsChip(
+              title: designer,
+              selected: store.designerFocus(for: board.id).contains(designer)
+            ) {
+              store.toggleDesignerFocus(for: board.id, designer: designer)
             }
-            .padding(10)
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
           }
-          .buttonStyle(.plain)
+        }
+
+        Text("Price").font(.headline)
+        Text("CHF \(Int(store.priceMin(for: board.id))) - \(Int(store.priceMax(for: board.id)))")
+          .font(.subheadline)
+          .bold()
+        Text("From")
+        Slider(
+          value: Binding(
+            get: { store.priceMin(for: board.id) },
+            set: { store.setPriceMin(for: board.id, value: $0) }
+          ),
+          in: 0...5000,
+          step: 10
+        )
+        Text("To")
+        Slider(
+          value: Binding(
+            get: { store.priceMax(for: board.id) },
+            set: { store.setPriceMax(for: board.id, value: $0) }
+          ),
+          in: 0...5000,
+          step: 10
+        )
+
+        Text("Quality").font(.headline)
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+          ForEach(store.availableQualities, id: \.self) { quality in
+            settingsChip(
+              title: quality,
+              selected: store.qualityFocus(for: board.id).contains(quality)
+            ) {
+              store.toggleQualityFocus(for: board.id, quality: quality)
+            }
+          }
+        }
+
+        Text("Country of origin").font(.headline)
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+          ForEach(store.availableCountries, id: \.self) { country in
+            settingsChip(
+              title: country,
+              selected: store.countryFocus(for: board.id).contains(country)
+            ) {
+              store.toggleCountryFocus(for: board.id, country: country)
+            }
+          }
         }
       }
       .padding(16)
     }
+  }
+
+  private func settingsChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      HStack {
+        Text(title)
+          .lineLimit(1)
+        Spacer()
+        Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+      }
+      .padding(10)
+      .background(selected ? Color(.systemGray4) : Color(.systemGray6))
+      .clipShape(RoundedRectangle(cornerRadius: 10))
+      .foregroundStyle(.primary)
+    }
+    .buttonStyle(.plain)
   }
 }
 
 struct BoardDetailView: View {
   @ObservedObject var store: PrototypeStore
   let board: Moodboard
-  @State private var pageSelection = 2
+  @State private var pageSelection = 0
 
   var body: some View {
     NavigationStack {
-      TabView(selection: $pageSelection) {
-        BoardSettingsView(store: store, board: board)
-          .tag(0)
-
-        purchasesPage
-          .tag(1)
-
-        pinsPage
-          .tag(2)
-      }
-      .tabViewStyle(.page(indexDisplayMode: .never))
-      .navigationTitle(board.name)
-      .toolbar {
-        ToolbarItem(placement: .topBarLeading) {
-          Text(pageTitle(for: pageSelection))
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+      VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 10) {
+          Text("Pinterest liked pins")
+            .font(.headline)
+          categoryTabs
         }
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+        .background(Color(.systemBackground))
+
+        TabView(selection: $pageSelection) {
+          pinsPage
+            .tag(0)
+
+          purchasesPage
+            .tag(1)
+
+          BoardSettingsView(store: store, board: board)
+            .tag(2)
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
       }
+      .navigationTitle(board.name)
+      .navigationBarTitleDisplayMode(.inline)
       .onAppear {
-        pageSelection = 2
+        pageSelection = 0
       }
     }
+  }
+
+  private var categoryTabs: some View {
+    HStack(spacing: 20) {
+      categoryTab(title: "Pins", index: 0)
+      categoryTab(title: "Purchases", index: 1)
+      categoryTab(title: "Settings", index: 2)
+    }
+  }
+
+  private func categoryTab(title: String, index: Int) -> some View {
+    Button {
+      pageSelection = index
+    } label: {
+      VStack(spacing: 6) {
+        Text(title)
+          .font(.subheadline)
+          .bold()
+          .foregroundStyle(.primary)
+        Rectangle()
+          .fill(pageSelection == index ? Color.primary : Color.clear)
+          .frame(height: 2)
+      }
+    }
+    .buttonStyle(.plain)
   }
 
   private var pinsPage: some View {
@@ -517,7 +729,7 @@ struct BoardDetailView: View {
       VStack(alignment: .leading, spacing: 12) {
         Text("Pinterest-like pins")
           .font(.headline)
-        Text("Swipe right for purchases, swipe right again for settings.")
+        Text("Swipe left for purchases, swipe left again for settings.")
           .font(.caption)
           .foregroundStyle(.secondary)
 
@@ -570,17 +782,6 @@ struct BoardDetailView: View {
         }
       }
       .padding(16)
-    }
-  }
-
-  private func pageTitle(for page: Int) -> String {
-    switch page {
-    case 0:
-      return "Settings"
-    case 1:
-      return "Purchases"
-    default:
-      return "Pins"
     }
   }
 
@@ -660,25 +861,36 @@ struct PrototypeRootView: View {
       TextField("Search board name", text: $store.boardSearch)
         .textFieldStyle(.roundedBorder)
 
-      ForEach(store.filteredBoards) { board in
-        Button {
-          store.toggleBoard(board)
-        } label: {
-          HStack(spacing: 10) {
-            WireframeImageBlock(width: 56, height: 56, cornerRadius: 8, label: "Board")
+      LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+        ForEach(store.filteredBoards) { board in
+          let isSelected = store.selectedBoardIDs.contains(board.id)
+          Button {
+            store.toggleBoard(board)
+          } label: {
+            VStack(alignment: .leading, spacing: 8) {
+              ZStack(alignment: .topTrailing) {
+                WireframeImageBlock(height: 162, cornerRadius: 12, label: "Moodboard")
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                  .font(.system(size: 20, weight: .semibold))
+                  .foregroundStyle(isSelected ? Color(.darkGray) : .secondary)
+                  .padding(8)
+              }
 
-            VStack(alignment: .leading) {
               Text(board.name)
-              Text(store.selectedBoardIDs.contains(board.id) ? "selected" : "tap to select")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.subheadline)
+                .bold()
+                .lineLimit(2)
             }
-
-            Spacer()
-            Text(store.selectedBoardIDs.contains(board.id) ? "[x]" : "[ ]")
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(8)
+            .background(Color(.systemBackground))
+            .overlay(
+              RoundedRectangle(cornerRadius: 12)
+                .stroke(isSelected ? Color(.darkGray) : Color(.systemGray4), lineWidth: 2)
+            )
           }
+          .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
       }
 
       Text("Selected: \(store.selectedBoardIDs.count)")
@@ -834,12 +1046,19 @@ struct PrototypeRootView: View {
     }
 
     ForEach(store.homeProducts) { product in
-      Button {
-        store.selectedProduct = product
-      } label: {
-        homeProductCard(product)
-      }
-      .buttonStyle(.plain)
+      homeProductCard(product)
+        .contentShape(Rectangle())
+        .onTapGesture {
+          store.selectedProduct = product
+        }
+        .simultaneousGesture(
+          DragGesture(minimumDistance: 24)
+            .onEnded { value in
+              if value.translation.width < -80 {
+                store.archiveFromHomeSwipe(product)
+              }
+            }
+        )
     }
   }
 
