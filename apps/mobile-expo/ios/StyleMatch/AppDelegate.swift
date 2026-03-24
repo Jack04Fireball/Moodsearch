@@ -2,51 +2,50 @@ import UIKit
 import SwiftUI
 
 enum StyleTheme {
-  // Punk palette from provided color reference.
-  static let bgBase = Color(red: 0.050, green: 0.050, blue: 0.050)
-  static let bgShade = Color(red: 0.090, green: 0.040, blue: 0.055)
-  static let surfaceTone = Color(red: 0.115, green: 0.060, blue: 0.070)
-  static let surfaceToneAlt = Color(red: 0.170, green: 0.070, blue: 0.090)
-  static let borderTone = Color(red: 0.360, green: 0.170, blue: 0.220)
-  static let textPrimary = Color(red: 0.960, green: 0.940, blue: 0.950)
-  static let textSecondary = Color(red: 0.760, green: 0.690, blue: 0.730)
-  static let accent = Color(red: 0.930, green: 0.120, blue: 0.370)
-  static let accentBright = Color(red: 1.000, green: 0.250, blue: 0.470)
-  static let badgeNeutral = Color(red: 0.860, green: 0.860, blue: 0.870)
-  static let blackCTA = Color(red: 0.040, green: 0.040, blue: 0.040)
+  static let bgBase = Color.black
+  static let bgShade = Color.black
+  static let surfaceTone = Color(red: 0.09, green: 0.09, blue: 0.09)
+  static let surfaceToneAlt = Color(red: 0.12, green: 0.12, blue: 0.12)
+  static let borderTone = Color(red: 0.28, green: 0.28, blue: 0.28)
+  static let textPrimary = Color(red: 0.93, green: 0.93, blue: 0.93)
+  static let textSecondary = Color(red: 0.66, green: 0.66, blue: 0.66)
+  static let accent = Color(red: 0.75, green: 0.75, blue: 0.75)
+  static let accentBright = Color(red: 0.88, green: 0.88, blue: 0.88)
+  static let badgeNeutral = Color(red: 0.80, green: 0.80, blue: 0.80)
+  static let blackCTA = Color.black
 
   static let bgGradient = LinearGradient(
-    colors: [bgBase, bgShade, Color(red: 0.320, green: 0.060, blue: 0.170), Color(red: 0.640, green: 0.090, blue: 0.200)],
+    colors: [bgBase, bgShade],
     startPoint: .topLeading,
     endPoint: .bottomTrailing
   )
 
   static let surfaceGradient = LinearGradient(
-    colors: [surfaceTone, surfaceToneAlt, Color(red: 0.360, green: 0.080, blue: 0.180)],
+    colors: [surfaceTone, surfaceToneAlt],
     startPoint: .topLeading,
     endPoint: .bottomTrailing
   )
 
   static let surfaceAltGradient = LinearGradient(
-    colors: [Color(red: 0.140, green: 0.070, blue: 0.080), Color(red: 0.270, green: 0.090, blue: 0.130), Color(red: 0.500, green: 0.100, blue: 0.180)],
+    colors: [Color(red: 0.12, green: 0.12, blue: 0.12), Color(red: 0.16, green: 0.16, blue: 0.16)],
     startPoint: .top,
     endPoint: .bottomTrailing
   )
 
   static let borderGradient = LinearGradient(
-    colors: [borderTone, Color(red: 0.700, green: 0.220, blue: 0.370)],
+    colors: [borderTone, borderTone],
     startPoint: .leading,
     endPoint: .trailing
   )
 
   static let accentGradient = LinearGradient(
-    colors: [accent, Color(red: 0.990, green: 0.220, blue: 0.380), Color(red: 1.000, green: 0.260, blue: 0.290)],
+    colors: [accent, accentBright],
     startPoint: .topLeading,
     endPoint: .bottomTrailing
   )
 
   static let ctaGradient = LinearGradient(
-    colors: [Color(red: 0.190, green: 0.040, blue: 0.080), Color(red: 0.430, green: 0.070, blue: 0.130), Color(red: 0.700, green: 0.120, blue: 0.190)],
+    colors: [Color(red: 0.08, green: 0.08, blue: 0.08), Color(red: 0.11, green: 0.11, blue: 0.11)],
     startPoint: .leading,
     endPoint: .trailing
   )
@@ -145,7 +144,7 @@ struct WireframeImageBlock: View {
   let cornerRadius: CGFloat
   var label: String = "Image"
 
-  init(width: CGFloat? = nil, height: CGFloat, cornerRadius: CGFloat = 10, label: String = "Image") {
+  init(width: CGFloat? = nil, height: CGFloat, cornerRadius: CGFloat = 0, label: String = "Image") {
     self.width = width
     self.height = height
     self.cornerRadius = cornerRadius
@@ -192,7 +191,7 @@ struct SwipeableCard<Content: View>: View {
 
   var body: some View {
     ZStack {
-      RoundedRectangle(cornerRadius: 12)
+      RoundedRectangle(cornerRadius: 0)
         .fill(Color.black.opacity(max(leftSwipeProgress, rightSwipeProgress)))
 
       HStack {
@@ -232,7 +231,7 @@ struct SwipeableCard<Content: View>: View {
             }
         )
     }
-    .clipShape(RoundedRectangle(cornerRadius: 12))
+    .clipShape(RoundedRectangle(cornerRadius: 0))
   }
 }
 
@@ -833,10 +832,10 @@ struct BoardSettingsView: View {
       }
       .padding(10)
       .background(
-        RoundedRectangle(cornerRadius: 10)
+        RoundedRectangle(cornerRadius: 0)
           .fill(chipFill)
       )
-      .clipShape(RoundedRectangle(cornerRadius: 10))
+      .clipShape(RoundedRectangle(cornerRadius: 0))
       .foregroundStyle(StyleTheme.textPrimary)
       .punkTexture(0.24)
     }
@@ -951,7 +950,7 @@ struct BoardDetailView: View {
         } else {
           ForEach(bought) { product in
             HStack(spacing: 10) {
-              WireframeImageBlock(width: 70, height: 70, cornerRadius: 8, label: "Product")
+              WireframeImageBlock(width: 70, height: 70, cornerRadius: 0, label: "Product")
 
               VStack(alignment: .leading, spacing: 3) {
                 Text(product.title).bold()
@@ -966,7 +965,7 @@ struct BoardDetailView: View {
             }
             .padding(10)
             .background(StyleTheme.surfaceAltGradient)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .clipShape(RoundedRectangle(cornerRadius: 0))
             .punkTexture(0.24)
           }
         }
@@ -997,7 +996,7 @@ struct BoardDetailView: View {
   }
 
   private func pinCard(url: String, height: CGFloat) -> some View {
-    WireframeImageBlock(height: height, cornerRadius: 12, label: "Pin")
+    WireframeImageBlock(height: height, cornerRadius: 0, label: "Pin")
       .frame(maxWidth: .infinity)
   }
 }
@@ -1094,7 +1093,7 @@ struct PrototypeRootView: View {
 
     case .boards:
       Text("Select moodboard")
-        .font(.custom("Times New Roman", size: 126))
+        .font(.custom("RuderPlakatLLTrialWeb-Regular", size: 126))
         .lineSpacing(63)
         .tracking(0.6)
         .lineLimit(2)
@@ -1111,7 +1110,7 @@ struct PrototypeRootView: View {
           } label: {
             VStack(alignment: .leading, spacing: 8) {
               ZStack(alignment: .topTrailing) {
-                WireframeImageBlock(height: 162, cornerRadius: 12, label: "Moodboard")
+                WireframeImageBlock(height: 162, cornerRadius: 0, label: "Moodboard")
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                   .font(.system(size: 20, weight: .semibold))
                   .foregroundStyle(isSelected ? StyleTheme.accentBright : StyleTheme.textSecondary)
@@ -1127,7 +1126,7 @@ struct PrototypeRootView: View {
             .padding(8)
             .background(StyleTheme.surfaceGradient)
             .overlay(
-              RoundedRectangle(cornerRadius: 12)
+              RoundedRectangle(cornerRadius: 0)
                 .stroke(isSelected ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.borderGradient), lineWidth: 2)
             )
             .punkTexture(0.3)
@@ -1181,7 +1180,7 @@ struct PrototypeRootView: View {
             .foregroundStyle(StyleTheme.textSecondary)
 
           Text(title)
-            .font(.custom("Times New Roman", size: 126))
+            .font(.custom("RuderPlakatLLTrialWeb-Regular", size: 126))
             .lineSpacing(63)
             .tracking(0.9)
             .lineLimit(2)
@@ -1231,13 +1230,13 @@ struct PrototypeRootView: View {
   private func setupHeroSection(title: String, imageLabel: String, description: String) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text(title)
-        .font(.custom("Times New Roman", size: 126))
+        .font(.custom("RuderPlakatLLTrialWeb-Regular", size: 126))
         .lineSpacing(63)
         .tracking(0.6)
         .lineLimit(2)
         .minimumScaleFactor(0.25)
         .foregroundStyle(StyleTheme.textPrimary)
-      WireframeImageBlock(height: 190, cornerRadius: 14, label: imageLabel)
+      WireframeImageBlock(height: 190, cornerRadius: 0, label: imageLabel)
       Text(description)
         .font(.body)
         .foregroundStyle(StyleTheme.textSecondary)
@@ -1269,7 +1268,7 @@ struct PrototypeRootView: View {
   }
 
   private var stickyTabHeader: some View {
-    HStack(spacing: 8) {
+    HStack(spacing: 0) {
       tabHeaderButton(title: "Home", isActive: store.mainTab == .home) {
         store.mainTab = .home
       }
@@ -1294,17 +1293,13 @@ struct PrototypeRootView: View {
 
   private func tabHeaderButton(title: String, isActive: Bool, action: @escaping () -> Void) -> some View {
     return Button(action: action) {
-      VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 0) {
         Text(title.uppercased())
-          .font(.system(size: 18, weight: isActive ? .bold : .medium))
+          .font(.system(size: 18, weight: isActive ? .bold : .regular))
           .tracking(1.1)
           .foregroundStyle(isActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
-
-        Rectangle()
-          .fill(isActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(Color.clear))
-          .frame(height: 2.5)
       }
-      .padding(.horizontal, 2)
+      .frame(maxWidth: .infinity)
       .padding(.vertical, 4)
     }
     .buttonStyle(.plain)
@@ -1318,32 +1313,24 @@ struct PrototypeRootView: View {
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
         let allIsActive = store.activeBoardFilter == nil
-        Button(store.activeBoardFilter == nil ? "[All]" : "All") {
+        Button("All") {
           store.activeBoardFilter = nil
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
+        .fontWeight(allIsActive ? .bold : .regular)
         .foregroundStyle(allIsActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
-        .overlay(alignment: .bottom) {
-          Rectangle()
-            .fill(allIsActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(Color.clear))
-            .frame(height: 2)
-        }
         .buttonStyle(.plain)
 
         ForEach(store.selectedBoards) { board in
           let boardIsActive = store.activeBoardFilter == board.id
-          Button(store.activeBoardFilter == board.id ? "[\(board.name)]" : board.name) {
+          Button(board.name) {
             store.activeBoardFilter = board.id
           }
           .padding(.horizontal, 8)
           .padding(.vertical, 6)
+          .fontWeight(boardIsActive ? .bold : .regular)
           .foregroundStyle(boardIsActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
-          .overlay(alignment: .bottom) {
-            Rectangle()
-              .fill(boardIsActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(Color.clear))
-              .frame(height: 2)
-          }
           .buttonStyle(.plain)
         }
       }
@@ -1390,11 +1377,11 @@ struct PrototypeRootView: View {
           store.selectedMoodboard = board
         } label: {
           VStack(alignment: .leading, spacing: 8) {
-            WireframeImageBlock(height: 124, cornerRadius: 12, label: "Moodboard Cover")
+            WireframeImageBlock(height: 124, cornerRadius: 0, label: "Moodboard Cover")
             HStack(spacing: 8) {
-              WireframeImageBlock(height: 124, cornerRadius: 10, label: "Pin")
+              WireframeImageBlock(height: 124, cornerRadius: 0, label: "Pin")
                 .frame(maxWidth: .infinity)
-              WireframeImageBlock(height: 124, cornerRadius: 10, label: "Pin")
+              WireframeImageBlock(height: 124, cornerRadius: 0, label: "Pin")
                 .frame(maxWidth: .infinity)
             }
 
@@ -1406,7 +1393,7 @@ struct PrototypeRootView: View {
           .padding(8)
           .background(StyleTheme.surfaceGradient)
           .overlay(
-            RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.borderGradient, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 0).stroke(StyleTheme.borderGradient, lineWidth: 1)
           )
           .contentShape(Rectangle())
           .frame(minHeight: 300)
@@ -1428,10 +1415,10 @@ struct PrototypeRootView: View {
 
       HStack(spacing: 10) {
         HStack(spacing: 8) {
-          WireframeImageBlock(width: bigImageWidth, height: cardHeight, cornerRadius: 10, label: "Main")
+          WireframeImageBlock(width: bigImageWidth, height: cardHeight, cornerRadius: 0, label: "Main")
           VStack(spacing: 8) {
-            WireframeImageBlock(width: stackedWidth, height: smallImageHeight, cornerRadius: 10, label: "Alt")
-            WireframeImageBlock(width: stackedWidth, height: smallImageHeight, cornerRadius: 10, label: "Alt")
+            WireframeImageBlock(width: stackedWidth, height: smallImageHeight, cornerRadius: 0, label: "Alt")
+            WireframeImageBlock(width: stackedWidth, height: smallImageHeight, cornerRadius: 0, label: "Alt")
           }
         }
         .frame(width: visualWidth, alignment: .leading)
@@ -1465,7 +1452,7 @@ struct PrototypeRootView: View {
       .padding(8)
       .background(StyleTheme.surfaceGradient)
       .overlay(
-        RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.borderGradient, lineWidth: 1)
+        RoundedRectangle(cornerRadius: 0).stroke(StyleTheme.borderGradient, lineWidth: 1)
       )
       .punkTexture(0.3)
     }
@@ -1495,7 +1482,7 @@ struct PrototypeRootView: View {
       let textWidth = max(100, proxy.size.width - imageWidth - 12)
 
       HStack(spacing: 10) {
-        WireframeImageBlock(width: imageWidth, height: cardHeight, cornerRadius: 10, label: "Archived")
+        WireframeImageBlock(width: imageWidth, height: cardHeight, cornerRadius: 0, label: "Archived")
 
         VStack(alignment: .leading, spacing: 6) {
           Text(product.title)
@@ -1517,7 +1504,7 @@ struct PrototypeRootView: View {
       .padding(8)
       .background(StyleTheme.surfaceGradient)
       .overlay(
-        RoundedRectangle(cornerRadius: 12).stroke(StyleTheme.borderGradient, lineWidth: 1)
+        RoundedRectangle(cornerRadius: 0).stroke(StyleTheme.borderGradient, lineWidth: 1)
       )
       .punkTexture(0.3)
     }
@@ -1541,7 +1528,7 @@ struct ProductDetailSheetView: View {
         VStack(alignment: .leading, spacing: 16) {
           TabView(selection: $currentImageIndex) {
             ForEach(Array(galleryLabels.enumerated()), id: \.offset) { index, label in
-              WireframeImageBlock(height: 290, cornerRadius: 14, label: label)
+              WireframeImageBlock(height: 290, cornerRadius: 0, label: label)
                 .padding(.horizontal, 2)
                 .tag(index)
             }
@@ -1570,7 +1557,7 @@ struct ProductDetailSheetView: View {
             infoRow(title: "Moodboard", value: store.boardName(for: product.boardID))
           }
           .background(StyleTheme.surfaceAltGradient)
-          .clipShape(RoundedRectangle(cornerRadius: 12))
+          .clipShape(RoundedRectangle(cornerRadius: 0))
           .punkTexture(0.28)
 
           Text("Buy now")
@@ -1586,7 +1573,7 @@ struct ProductDetailSheetView: View {
           .frame(maxWidth: .infinity)
           .padding(.vertical, 14)
           .background(StyleTheme.ctaGradient)
-          .clipShape(RoundedRectangle(cornerRadius: 12))
+          .clipShape(RoundedRectangle(cornerRadius: 0))
           .punkTexture(0.3)
 
           HStack(spacing: 24) {

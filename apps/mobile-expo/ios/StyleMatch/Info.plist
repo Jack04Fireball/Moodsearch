@@ -33,7 +33,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>16</string>
+	<string>17</string>
 	<key>GoogleClientID</key>
 	<string></string>
 	<key>LSMinimumSystemVersion</key>
@@ -59,6 +59,11 @@
 	</array>
 	<key>UIRequiresFullScreen</key>
 	<false/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>RuderPlakatLLTrialWeb-Regular.ttf</string>
+		<string>RuderPlakatKonturLLVarTrialWeb.ttf</string>
+	</array>
 	<key>UIStatusBarStyle</key>
 	<string>UIStatusBarStyleDefault</string>
 	<key>UISupportedInterfaceOrientations</key>
@@ -67,7 +72,7 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 	<key>UIUserInterfaceStyle</key>
-	<string>Light</string>
+	<string>Dark</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 </dict>
