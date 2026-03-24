@@ -1265,22 +1265,32 @@ struct PrototypeRootView: View {
         }
       }
     }
+    .ignoresSafeArea(edges: .top)
   }
 
   private var stickyTabHeader: some View {
-    HStack(spacing: 0) {
-      tabHeaderButton(title: "Home", isActive: store.mainTab == .home) {
-        store.mainTab = .home
-      }
-      tabHeaderButton(title: "Moodboards", isActive: store.mainTab == .moodboards) {
-        store.mainTab = .moodboards
-      }
-      tabHeaderButton(title: "Archive", isActive: store.mainTab == .archive) {
-        store.mainTab = .archive
+    VStack(alignment: .leading, spacing: 8) {
+      Text("StyleMatch")
+        .font(.custom("RuderPlakatLLTrialWeb-Regular", size: 56))
+        .foregroundStyle(StyleTheme.textPrimary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+
+      HStack(spacing: 0) {
+        tabHeaderButton(title: "Home", isActive: store.mainTab == .home) {
+          store.mainTab = .home
+        }
+        tabHeaderButton(title: "Moodboards", isActive: store.mainTab == .moodboards) {
+          store.mainTab = .moodboards
+        }
+        tabHeaderButton(title: "Archive", isActive: store.mainTab == .archive) {
+          store.mainTab = .archive
+        }
       }
     }
     .padding(.horizontal, 16)
-    .padding(.vertical, 10)
+    .padding(.top, 0)
+    .padding(.bottom, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(StyleTheme.surfaceGradient)
     .punkTexture(0.3)
@@ -1406,14 +1416,27 @@ struct PrototypeRootView: View {
 
   private func homeProductCard(_ product: Product) -> some View {
     GeometryReader { proxy in
-      let cardHeight: CGFloat = 170
-      let infoWidth = max(126, proxy.size.width * 0.3)
-      let visualWidth = max(170, proxy.size.width - infoWidth - 18)
-      let bigImageWidth = max(102, visualWidth * 0.62)
-      let stackedWidth = max(58, visualWidth - bigImageWidth - 8)
+      let cardHeight: CGFloat = 208
+      let visualWidth = max(180, proxy.size.width - 16)
+      let bigImageWidth = max(120, visualWidth * 0.62)
+      let stackedWidth = max(72, visualWidth - bigImageWidth - 8)
       let smallImageHeight = (cardHeight - 8) / 2
 
-      HStack(spacing: 10) {
+      VStack(alignment: .leading, spacing: 10) {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+          Text(product.title)
+            .font(.custom("RuderPlakatLLTrialWeb-Regular", size: 38))
+            .lineLimit(1)
+            .minimumScaleFactor(0.55)
+            .foregroundStyle(StyleTheme.textPrimary)
+
+          Spacer()
+
+          Text("CHF \(product.priceCHF)")
+            .font(.system(size: 18, weight: .medium))
+            .foregroundStyle(StyleTheme.textPrimary)
+        }
+
         HStack(spacing: 8) {
           WireframeImageBlock(width: bigImageWidth, height: cardHeight, cornerRadius: 0, label: "Main")
           VStack(spacing: 8) {
@@ -1423,40 +1446,29 @@ struct PrototypeRootView: View {
         }
         .frame(width: visualWidth, alignment: .leading)
 
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 10) {
           Text(store.likedProductIDs.contains(product.id) ? "LIKED" : "NEW")
-            .font(.caption)
-            .bold()
+            .font(.caption.weight(.bold))
             .foregroundStyle(store.likedProductIDs.contains(product.id) ? StyleTheme.accentBright : StyleTheme.badgeNeutral)
-          Text(product.title)
-            .bold()
-            .lineLimit(2)
-            .foregroundStyle(StyleTheme.textPrimary)
-          Text("CHF \(product.priceCHF)")
-            .font(.subheadline)
-            .foregroundStyle(StyleTheme.textPrimary)
           Text(product.brand)
             .font(.caption)
+            .foregroundStyle(StyleTheme.textSecondary)
+          Text("•")
             .foregroundStyle(StyleTheme.textSecondary)
           Text(product.designer)
             .font(.caption)
             .foregroundStyle(StyleTheme.textSecondary)
-          Text("Score \(store.score(for: product))")
-            .font(.caption2)
-            .foregroundStyle(StyleTheme.textSecondary)
         }
-        .frame(width: infoWidth, alignment: .leading)
       }
-      .frame(height: cardHeight)
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(8)
-      .background(StyleTheme.surfaceGradient)
+      .background(Color.clear)
       .overlay(
         RoundedRectangle(cornerRadius: 0).stroke(StyleTheme.borderGradient, lineWidth: 1)
       )
       .punkTexture(0.3)
     }
-    .frame(height: 186)
+    .frame(height: 304)
   }
 
   @ViewBuilder
