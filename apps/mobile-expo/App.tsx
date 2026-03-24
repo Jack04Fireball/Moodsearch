@@ -1,4 +1,5 @@
 import { StatusBar } from "expo-status-bar";
+import { useFonts } from "expo-font";
 import * as WebBrowser from "expo-web-browser";
 import { useMemo, useState } from "react";
 import {
@@ -48,36 +49,33 @@ type BoardSettings = {
   country: "all" | "CH" | "EU";
 };
 
-const BUILD_MARKER = "Build 2006 - Wireframe Gray";
+const BUILD_MARKER = "Build 2007 - Brutalist Architecture";
 
 const PALETTE = {
-  bg: "#F6F6F6",
-  surface: "#FFFFFF",
-  border: "#E6E6E6",
-  text: "#121212",
-  textSoft: "#707070",
-  accent: "#6F6F6F",
-  accentText: "#FFFFFF",
-  chip: "#E3E3E3",
-  chipActive: "#7A7A7A",
-  chipActiveText: "#FFFFFF",
-  placeholder: "#CFCFCF",
-  placeholderDark: "#B8B8B8",
+  bg: "#CECCC5",
+  surface: "#DDDAD3",
+  border: "#111111",
+  text: "#0B0B0B",
+  textSoft: "#3D3A34",
+  accent: "#0B0B0B",
+  accentText: "#ECE8DF",
+  chip: "#C4C1BA",
+  chipActive: "#0B0B0B",
+  chipActiveText: "#ECE8DF",
+  placeholder: "#9A978F",
+  placeholderDark: "#7A7770",
 };
 
 const INTRO_SLIDES = [
-  "Pinterest-inspired shopping flow with board-based intelligence.",
-  "Every visual is a gray placeholder so we can test structure only.",
-  "You can start from zero every time and test the full journey.",
+  "Brutalist architecture moodboard: raw concrete, sharp geometry, structural rhythm.",
+  "Every visual stays grayscale placeholder-only for user flow testing.",
+  "The full onboarding and search journey stays unchanged in function.",
 ];
 
 const SEED_BOARDS: Moodboard[] = [
-  { id: "b1", name: "City Minimal", pinCount: 124 },
-  { id: "b2", name: "Quiet Luxury", pinCount: 92 },
-  { id: "b3", name: "Street Layering", pinCount: 151 },
-  { id: "b4", name: "Tailored Archive", pinCount: 88 },
-  { id: "b5", name: "Soft Evening", pinCount: 67 },
-  { id: "b6", name: "Daily Uniform", pinCount: 118 },
+  { id: "board_minimal", name: "Monolithic Facades", pinCount: 124 },
+  { id: "board_punk", name: "Raw Concrete Frames", pinCount: 92 },
+  { id: "board_street", name: "Modular Grid Volumes", pinCount: 151 },
 ];
 
 const OFFERS: Offer[] = [
@@ -256,19 +254,25 @@ function defaultSettingsForBoards(boardIds: string[]): Record<string, BoardSetti
   }, {});
 }
 
-function PlaceholderBlock({ height, radius = 14 }: { height: number; radius?: number }) {
+function PlaceholderBlock({ height, radius = 0 }: { height: number; radius?: number }) {
   return (
     <View
       style={{
         height,
         borderRadius: radius,
         backgroundColor: PALETTE.placeholder,
+        borderWidth: 2,
+        borderColor: PALETTE.border,
       }}
     />
   );
 }
 
 export default function App() {
+  const [fontsLoaded, fontError] = useFonts({
+    RuderPlakatH1: require("./assets/fonts/RuderPlakatLLTrialWeb-Regular.ttf"),
+    RuderPlakatOutline: require("./assets/fonts/RuderPlakatKonturLLVarTrialWeb.ttf"),
+  });
   const { width } = useWindowDimensions();
 
   const [flowStage, setFlowStage] = useState<FlowStage>("intro");
@@ -1245,6 +1249,17 @@ export default function App() {
     return renderMainApp();
   }
 
+  if (!fontsLoaded && !fontError) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.fontLoading}>
+          <ActivityIndicator color={PALETTE.text} />
+          <Text style={styles.bodySoft}>Loading typography…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -1262,6 +1277,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: PALETTE.bg,
   },
+  fontLoading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
   page: {
     flex: 1,
     paddingHorizontal: 12,
@@ -1270,28 +1291,31 @@ const styles = StyleSheet.create({
   },
   flowCard: {
     flex: 1,
-    borderRadius: 24,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     borderColor: PALETTE.border,
     backgroundColor: PALETTE.surface,
     padding: 16,
     gap: 12,
   },
   heroTitle: {
-    fontSize: 32,
-    fontWeight: "800",
+    fontSize: 64,
+    lineHeight: 64,
+    fontFamily: "RuderPlakatH1",
     color: PALETTE.text,
-    letterSpacing: -0.8,
+    letterSpacing: 0.5,
   },
   heroSubtitle: {
     fontSize: 14,
     color: PALETTE.textSoft,
-    fontWeight: "600",
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
     marginTop: -4,
   },
   bodyText: {
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 24,
     color: PALETTE.text,
   },
   bodySoft: {
@@ -1311,7 +1335,7 @@ const styles = StyleSheet.create({
   dot: {
     width: 9,
     height: 9,
-    borderRadius: 9,
+    borderRadius: 0,
   },
   dotActive: {
     backgroundColor: PALETTE.accent,
@@ -1321,7 +1345,9 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     backgroundColor: PALETTE.accent,
-    borderRadius: 14,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: PALETTE.border,
     height: 48,
     alignItems: "center",
     justifyContent: "center",
@@ -1336,13 +1362,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   secondaryButton: {
-    borderRadius: 14,
+    borderRadius: 0,
     height: 48,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    backgroundColor: "#F4F4F4",
+    backgroundColor: PALETTE.bg,
   },
   secondaryButtonText: {
     color: PALETTE.text,
@@ -1350,22 +1376,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   connectCard: {
-    backgroundColor: "#F2F2F2",
-    borderRadius: 16,
+    backgroundColor: PALETTE.bg,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: PALETTE.border,
     padding: 12,
     gap: 10,
   },
   connectAvatar: {
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: 0,
     backgroundColor: PALETTE.placeholder,
+    borderWidth: 2,
+    borderColor: PALETTE.border,
   },
   searchInput: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    backgroundColor: "#F4F4F4",
-    borderRadius: 12,
+    backgroundColor: PALETTE.bg,
+    borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 10,
     color: PALETTE.text,
@@ -1374,9 +1404,9 @@ const styles = StyleSheet.create({
   boardListItem: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    borderRadius: 14,
+    borderRadius: 0,
     backgroundColor: PALETTE.surface,
     padding: 8,
     marginBottom: 8,
@@ -1385,13 +1415,17 @@ const styles = StyleSheet.create({
   boardListThumb: {
     width: 62,
     height: 62,
-    borderRadius: 10,
+    borderRadius: 0,
     backgroundColor: PALETTE.placeholder,
+    borderWidth: 2,
+    borderColor: PALETTE.border,
   },
   tagPill: {
     paddingHorizontal: 10,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: PALETTE.border,
     backgroundColor: PALETTE.chip,
     alignItems: "center",
     justifyContent: "center",
@@ -1413,23 +1447,23 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 0.7,
+    letterSpacing: 1.2,
     textTransform: "uppercase",
     color: PALETTE.textSoft,
     marginTop: 2,
   },
   rangeCard: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    borderRadius: 14,
-    backgroundColor: "#F4F4F4",
+    borderRadius: 0,
+    backgroundColor: PALETTE.bg,
     padding: 10,
     gap: 10,
   },
   rangeTrackBase: {
     height: 8,
     backgroundColor: PALETTE.border,
-    borderRadius: 8,
+    borderRadius: 0,
     overflow: "hidden",
   },
   rangeTrackActive: {
@@ -1444,10 +1478,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   smallBtn: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
     backgroundColor: PALETTE.surface,
-    borderRadius: 12,
+    borderRadius: 0,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
@@ -1464,29 +1498,29 @@ const styles = StyleSheet.create({
     color: PALETTE.chipActiveText,
   },
   progressCard: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    borderRadius: 16,
-    backgroundColor: "#F4F4F4",
+    borderRadius: 0,
+    backgroundColor: PALETTE.bg,
     padding: 12,
     gap: 8,
   },
   progressBar: {
     height: 9,
-    borderRadius: 9,
+    borderRadius: 0,
     backgroundColor: PALETTE.border,
     overflow: "hidden",
   },
   progressBarFill: {
     width: "100%",
     height: 9,
-    borderRadius: 9,
+    borderRadius: 0,
     backgroundColor: PALETTE.accent,
   },
   mainShell: {
     flex: 1,
-    borderRadius: 24,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     borderColor: PALETTE.border,
     backgroundColor: PALETTE.surface,
     overflow: "hidden",
@@ -1499,10 +1533,11 @@ const styles = StyleSheet.create({
     borderBottomColor: PALETTE.border,
   },
   brand: {
-    fontSize: 26,
-    fontWeight: "800",
+    fontSize: 52,
+    lineHeight: 52,
+    fontFamily: "RuderPlakatH1",
     color: PALETTE.text,
-    letterSpacing: -0.4,
+    letterSpacing: 0.5,
   },
   tabBody: {
     flex: 1,
@@ -1516,14 +1551,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   sectionTitle: {
-    fontSize: 24,
-    fontWeight: "800",
+    fontSize: 40,
+    lineHeight: 40,
+    fontFamily: "RuderPlakatH1",
     color: PALETTE.text,
-    letterSpacing: -0.4,
+    letterSpacing: 0.3,
   },
   filterChip: {
     marginRight: 8,
-    borderRadius: 999,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: PALETTE.border,
     paddingHorizontal: 12,
     paddingVertical: 8,
     backgroundColor: PALETTE.chip,
@@ -1540,15 +1578,17 @@ const styles = StyleSheet.create({
     color: PALETTE.chipActiveText,
   },
   pinCard: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    borderRadius: 16,
+    borderRadius: 0,
     backgroundColor: PALETTE.surface,
     overflow: "hidden",
   },
   pinImage: {
     width: "100%",
     backgroundColor: PALETTE.placeholder,
+    borderBottomWidth: 2,
+    borderBottomColor: PALETTE.border,
   },
   pinTextWrap: {
     padding: 10,
@@ -1566,17 +1606,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   emptyStateCard: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    borderRadius: 14,
-    backgroundColor: "#F4F4F4",
+    borderRadius: 0,
+    backgroundColor: PALETTE.bg,
     padding: 12,
     gap: 4,
   },
   archiveRow: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    borderRadius: 14,
+    borderRadius: 0,
     backgroundColor: PALETTE.surface,
     padding: 8,
     flexDirection: "row",
@@ -1586,13 +1626,15 @@ const styles = StyleSheet.create({
   archiveThumb: {
     width: 56,
     height: 56,
-    borderRadius: 10,
+    borderRadius: 0,
     backgroundColor: PALETTE.placeholder,
+    borderWidth: 2,
+    borderColor: PALETTE.border,
   },
   detailScreen: {
     flex: 1,
-    borderRadius: 24,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 2,
     borderColor: PALETTE.border,
     backgroundColor: PALETTE.surface,
     padding: 14,
@@ -1600,12 +1642,12 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     alignSelf: "flex-start",
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    borderRadius: 12,
+    borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    backgroundColor: "#F4F4F4",
+    backgroundColor: PALETTE.bg,
   },
   backBtnText: {
     fontSize: 12,
@@ -1613,10 +1655,10 @@ const styles = StyleSheet.create({
     color: PALETTE.text,
   },
   boardPage: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    borderRadius: 14,
-    backgroundColor: "#F7F7F7",
+    borderRadius: 0,
+    backgroundColor: PALETTE.bg,
     padding: 10,
     gap: 8,
   },
@@ -1638,7 +1680,9 @@ const styles = StyleSheet.create({
   },
   addBtn: {
     backgroundColor: PALETTE.accent,
-    borderRadius: 12,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: PALETTE.border,
     paddingHorizontal: 12,
     paddingVertical: 11,
   },
@@ -1657,10 +1701,10 @@ const styles = StyleSheet.create({
   },
   tabBtn: {
     flex: 1,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    borderRadius: 12,
-    backgroundColor: "#F4F4F4",
+    borderRadius: 0,
+    backgroundColor: PALETTE.bg,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 10,
@@ -1681,9 +1725,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 12,
     bottom: 16,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: PALETTE.border,
-    borderRadius: 999,
+    borderRadius: 0,
     backgroundColor: PALETTE.surface,
     paddingHorizontal: 12,
     paddingVertical: 8,
