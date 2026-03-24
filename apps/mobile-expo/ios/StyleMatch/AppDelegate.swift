@@ -12,7 +12,9 @@ enum StyleTheme {
   static let accent = Color(red: 0.75, green: 0.75, blue: 0.75)
   static let accentBright = Color(red: 0.88, green: 0.88, blue: 0.88)
   static let badgeNeutral = Color(red: 0.80, green: 0.80, blue: 0.80)
-  static let blackCTA = Color.black
+  static let tileStroke = Color.white.opacity(0.82)
+  static let tableStroke = Color.white.opacity(0.42)
+  static let placeholder = Color(red: 0.36, green: 0.36, blue: 0.36)
 
   static let bgGradient = LinearGradient(
     colors: [bgBase, bgShade],
@@ -23,12 +25,6 @@ enum StyleTheme {
   static let surfaceGradient = LinearGradient(
     colors: [surfaceTone, surfaceToneAlt],
     startPoint: .topLeading,
-    endPoint: .bottomTrailing
-  )
-
-  static let surfaceAltGradient = LinearGradient(
-    colors: [Color(red: 0.12, green: 0.12, blue: 0.12), Color(red: 0.16, green: 0.16, blue: 0.16)],
-    startPoint: .top,
     endPoint: .bottomTrailing
   )
 
@@ -101,6 +97,16 @@ extension View {
   func punkTexture(_ opacity: Double = 0.34) -> some View {
     modifier(PunkTextureModifier(opacity: opacity))
   }
+
+  func fragmentedTileBorder(_ lineWidth: CGFloat = 1) -> some View {
+    overlay(
+      Rectangle()
+        .stroke(
+          StyleTheme.tileStroke,
+          style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt, lineJoin: .miter, dash: [28, 16], dashPhase: 1)
+        )
+    )
+  }
 }
 
 enum SetupStep {
@@ -121,7 +127,6 @@ enum MainTab {
 struct Moodboard: Identifiable, Hashable {
   let id: UUID
   let name: String
-  let coverImageURL: String
   let pinImageURLs: [String]
 }
 
@@ -129,7 +134,6 @@ struct Product: Identifiable, Hashable {
   let id: UUID
   let boardID: UUID
   let title: String
-  let productImageURL: String
   let brand: String
   let designer: String
   let priceCHF: Int
@@ -154,10 +158,13 @@ struct WireframeImageBlock: View {
   var body: some View {
     ZStack {
       RoundedRectangle(cornerRadius: cornerRadius)
-        .fill(StyleTheme.surfaceAltGradient)
+        .fill(StyleTheme.placeholder)
 
       RoundedRectangle(cornerRadius: cornerRadius)
-        .stroke(StyleTheme.borderGradient, lineWidth: 1)
+        .stroke(
+          StyleTheme.tileStroke,
+          style: StrokeStyle(lineWidth: 1, lineCap: .butt, lineJoin: .miter, dash: [26, 14], dashPhase: 1)
+        )
 
       VStack(spacing: 4) {
         Image(systemName: "photo")
@@ -242,7 +249,6 @@ final class PrototypeStore: ObservableObject {
   @Published var boardSearch: String = ""
   @Published var selectedBoardIDs: Set<UUID> = []
 
-  @Published var sizeProfile: String = "M"
   @Published var selectedBrandFocus: Set<String> = []
   @Published var priceMin: Double = 200
   @Published var priceMax: Double = 2000
@@ -263,7 +269,7 @@ final class PrototypeStore: ObservableObject {
   @Published var archivedProductIDs: Set<UUID> = []
   @Published var boughtProductIDs: Set<UUID> = []
   @Published var likedProductIDs: Set<UUID> = []
-  @Published var hasAcceptedCompliance: Bool = false
+  @Published var dislikedProductIDs: Set<UUID> = []
 
   let availableDesigners: [String]
   let availableBrands: [String]
@@ -289,7 +295,6 @@ final class PrototypeStore: ObservableObject {
       Moodboard(
         id: UUID(),
         name: "Minimal Outfits",
-        coverImageURL: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200",
         pinImageURLs: [
           "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800",
           "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800",
@@ -299,7 +304,6 @@ final class PrototypeStore: ObservableObject {
       Moodboard(
         id: UUID(),
         name: "Streetwear Looks",
-        coverImageURL: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1200",
         pinImageURLs: [
           "https://images.unsplash.com/photo-1495121605193-b116b5b09a6b?w=800",
           "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800",
@@ -309,7 +313,6 @@ final class PrototypeStore: ObservableObject {
       Moodboard(
         id: UUID(),
         name: "Tailored Essentials",
-        coverImageURL: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=1200",
         pinImageURLs: [
           "https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?w=800",
           "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800",
@@ -319,7 +322,6 @@ final class PrototypeStore: ObservableObject {
       Moodboard(
         id: UUID(),
         name: "Neutral Winter Fits",
-        coverImageURL: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=1200",
         pinImageURLs: [
           "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800",
           "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=800",
@@ -329,7 +331,6 @@ final class PrototypeStore: ObservableObject {
       Moodboard(
         id: UUID(),
         name: "Sneaker Rotation",
-        coverImageURL: "https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=1200",
         pinImageURLs: [
           "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800",
           "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=800",
@@ -342,14 +343,14 @@ final class PrototypeStore: ObservableObject {
     self.selectedBoardIDs = Set(boards.map(\.id))
 
     self.allProducts = [
-      Product(id: UUID(), boardID: boards[0].id, title: "Wool Overshirt", productImageURL: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=1000", brand: "Arket", designer: "Jil Sander", priceCHF: 320, shop: "Arket", isNew: true, recencyBoost: 95),
-      Product(id: UUID(), boardID: boards[1].id, title: "Relaxed Cargo Pant", productImageURL: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=1000", brand: "COS", designer: "Our Legacy", priceCHF: 420, shop: "COS", isNew: true, recencyBoost: 92),
-      Product(id: UUID(), boardID: boards[2].id, title: "Structured Blazer", productImageURL: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=1000", brand: "Massimo Dutti", designer: "Lemaire", priceCHF: 790, shop: "Massimo Dutti", isNew: true, recencyBoost: 88),
-      Product(id: UUID(), boardID: boards[3].id, title: "Merino Turtleneck", productImageURL: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=1000", brand: "Uniqlo", designer: "Helmut Lang", priceCHF: 260, shop: "Uniqlo", isNew: true, recencyBoost: 85),
-      Product(id: UUID(), boardID: boards[4].id, title: "Retro Sneaker", productImageURL: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1000", brand: "Zalando", designer: "Prada", priceCHF: 680, shop: "Zalando", isNew: true, recencyBoost: 83),
-      Product(id: UUID(), boardID: boards[0].id, title: "Boxy Tee", productImageURL: "https://images.unsplash.com/photo-1527719327859-c6ce80353573?w=1000", brand: "Weekday", designer: "Acne Studios", priceCHF: 210, shop: "Weekday", isNew: true, recencyBoost: 80),
-      Product(id: UUID(), boardID: boards[2].id, title: "Pleated Trouser", productImageURL: "https://images.unsplash.com/photo-1506629905607-d9f9fc8f4f74?w=1000", brand: "A.P.C.", designer: "Maison Margiela", priceCHF: 560, shop: "A.P.C.", isNew: true, recencyBoost: 78),
-      Product(id: UUID(), boardID: boards[1].id, title: "Tech Shell Jacket", productImageURL: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=1000", brand: "Carhartt WIP", designer: "Yohji Yamamoto", priceCHF: 640, shop: "Carhartt WIP", isNew: true, recencyBoost: 76)
+      Product(id: UUID(), boardID: boards[0].id, title: "Wool Overshirt", brand: "Arket", designer: "Jil Sander", priceCHF: 320, shop: "Arket", isNew: true, recencyBoost: 95),
+      Product(id: UUID(), boardID: boards[1].id, title: "Relaxed Cargo Pant", brand: "COS", designer: "Our Legacy", priceCHF: 420, shop: "COS", isNew: true, recencyBoost: 92),
+      Product(id: UUID(), boardID: boards[2].id, title: "Structured Blazer", brand: "Massimo Dutti", designer: "Lemaire", priceCHF: 790, shop: "Massimo Dutti", isNew: true, recencyBoost: 88),
+      Product(id: UUID(), boardID: boards[3].id, title: "Merino Turtleneck", brand: "Uniqlo", designer: "Helmut Lang", priceCHF: 260, shop: "Uniqlo", isNew: true, recencyBoost: 85),
+      Product(id: UUID(), boardID: boards[4].id, title: "Retro Sneaker", brand: "Zalando", designer: "Prada", priceCHF: 680, shop: "Zalando", isNew: true, recencyBoost: 83),
+      Product(id: UUID(), boardID: boards[0].id, title: "Boxy Tee", brand: "Weekday", designer: "Acne Studios", priceCHF: 210, shop: "Weekday", isNew: true, recencyBoost: 80),
+      Product(id: UUID(), boardID: boards[2].id, title: "Pleated Trouser", brand: "A.P.C.", designer: "Maison Margiela", priceCHF: 560, shop: "A.P.C.", isNew: true, recencyBoost: 78),
+      Product(id: UUID(), boardID: boards[1].id, title: "Tech Shell Jacket", brand: "Carhartt WIP", designer: "Yohji Yamamoto", priceCHF: 640, shop: "Carhartt WIP", isNew: true, recencyBoost: 76)
     ]
   }
 
@@ -371,10 +372,6 @@ final class PrototypeStore: ObservableObject {
       return base.filter { $0.id == activeBoardFilter }
     }
     return base
-  }
-
-  var moodboardsOverviewBoards: [Moodboard] {
-    selectedBoards
   }
 
   var homeProducts: [Product] {
@@ -414,32 +411,6 @@ final class PrototypeStore: ObservableObject {
     }
 
     return total
-  }
-
-  func introText() -> String {
-    switch setupStep {
-    case .intro1:
-      return "Find products that match your Pinterest style."
-    case .intro2:
-      return "Use moodboard-based focus to guide results."
-    case .intro3:
-      return "Open the best matches and buy faster."
-    default:
-      return ""
-    }
-  }
-
-  func introTitle() -> String {
-    switch setupStep {
-    case .intro1:
-      return "Intro 1/3"
-    case .intro2:
-      return "Intro 2/3"
-    case .intro3:
-      return "Intro 3/3"
-    default:
-      return ""
-    }
   }
 
   func nextIntroStep() {
@@ -486,7 +457,6 @@ final class PrototypeStore: ObservableObject {
     mainTab = .home
     boardSearch = ""
     selectedBoardIDs = []
-    sizeProfile = "M"
     selectedBrandFocus = []
     priceMin = 200
     priceMax = 2000
@@ -504,30 +474,11 @@ final class PrototypeStore: ObservableObject {
     archivedProductIDs = []
     boughtProductIDs = []
     likedProductIDs = []
-    hasAcceptedCompliance = false
-  }
-
-  func acknowledgeCompliance() {
-    hasAcceptedCompliance = true
-  }
-
-  var complianceRules: [String] {
-    [
-      "Only use Pinterest data for the authorized user who connected the account.",
-      "Do not store Pinterest API data permanently (except your campaign analytics).",
-      "No scraping, no automated bulk actions, no hidden actions on behalf of users.",
-      "Do not combine Pinterest data with personal data from other services.",
-      "Do not sell or share Pinterest data with third parties.",
-      "Use API credentials securely and report data breaches quickly."
-    ]
+    dislikedProductIDs = []
   }
 
   func boardName(for boardID: UUID) -> String {
     allBoards.first(where: { $0.id == boardID })?.name ?? "Unknown Board"
-  }
-
-  func archivedProducts(for board: Moodboard) -> [Product] {
-    allProducts.filter { archivedProductIDs.contains($0.id) && $0.boardID == board.id }
   }
 
   func boughtProducts(for board: Moodboard) -> [Product] {
@@ -545,11 +496,32 @@ final class PrototypeStore: ObservableObject {
   func archiveFromHomeSwipe(_ product: Product) {
     archivedProductIDs.insert(product.id)
     likedProductIDs.remove(product.id)
+    dislikedProductIDs.remove(product.id)
+    activeBoardFilter = product.boardID
   }
 
   func likeFromHomeSwipe(_ product: Product) {
     likedProductIDs.insert(product.id)
     archivedProductIDs.remove(product.id)
+    dislikedProductIDs.remove(product.id)
+  }
+
+  func toggleLike(_ product: Product) {
+    if likedProductIDs.contains(product.id) {
+      likedProductIDs.remove(product.id)
+    } else {
+      likedProductIDs.insert(product.id)
+      dislikedProductIDs.remove(product.id)
+    }
+  }
+
+  func toggleDislike(_ product: Product) {
+    if dislikedProductIDs.contains(product.id) {
+      dislikedProductIDs.remove(product.id)
+    } else {
+      dislikedProductIDs.insert(product.id)
+      likedProductIDs.remove(product.id)
+    }
   }
 
   func toggleBought(_ product: Product) {
@@ -570,14 +542,6 @@ final class PrototypeStore: ObservableObject {
       return true
     }
     .sorted { score(for: $0) > score(for: $1) }
-  }
-
-  func toggleBrandFocus(_ name: String) {
-    if selectedBrandFocus.contains(name) {
-      selectedBrandFocus.remove(name)
-    } else {
-      selectedBrandFocus.insert(name)
-    }
   }
 
   func designerFocus(for boardID: UUID) -> Set<String> {
@@ -718,15 +682,15 @@ struct BoardSettingsView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 16) {
         Text("Moodboard Settings")
-          .font(.title3)
-          .bold()
+          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 42))
           .foregroundStyle(StyleTheme.textPrimary)
 
         Text("Set filters for this moodboard only.")
           .font(.caption)
           .foregroundStyle(StyleTheme.textSecondary)
 
-        Text("Brand").font(.headline)
+        Text("Brand")
+          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
         HStack {
           TextField("Add brand", text: $customBrandName)
             .textFieldStyle(.roundedBorder)
@@ -747,7 +711,8 @@ struct BoardSettingsView: View {
           }
         }
 
-        Text("Designer").font(.headline)
+        Text("Designer")
+          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
         HStack {
           TextField("Add designer", text: $customDesignerName)
             .textFieldStyle(.roundedBorder)
@@ -768,30 +733,44 @@ struct BoardSettingsView: View {
           }
         }
 
-        Text("Price").font(.headline)
+        Text("Price")
+          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
         Text("CHF \(Int(store.priceMin(for: board.id))) - \(Int(store.priceMax(for: board.id)))")
           .font(.subheadline)
           .bold()
-        Text("From")
-        Slider(
-          value: Binding(
-            get: { store.priceMin(for: board.id) },
-            set: { store.setPriceMin(for: board.id, value: $0) }
-          ),
-          in: 0...5000,
-          step: 10
-        )
-        Text("To")
-        Slider(
-          value: Binding(
-            get: { store.priceMax(for: board.id) },
-            set: { store.setPriceMax(for: board.id, value: $0) }
-          ),
-          in: 0...5000,
-          step: 10
-        )
+          .foregroundStyle(StyleTheme.textPrimary)
+        VStack(alignment: .leading, spacing: 8) {
+          Text("From")
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(StyleTheme.textSecondary)
+          Slider(
+            value: Binding(
+              get: { store.priceMin(for: board.id) },
+              set: { store.setPriceMin(for: board.id, value: $0) }
+            ),
+            in: 0...5000,
+            step: 10
+          )
+          .tint(.white)
+          Rectangle()
+            .fill(StyleTheme.tableStroke)
+            .frame(height: 1)
+          Text("To")
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(StyleTheme.textSecondary)
+          Slider(
+            value: Binding(
+              get: { store.priceMax(for: board.id) },
+              set: { store.setPriceMax(for: board.id, value: $0) }
+            ),
+            in: 0...5000,
+            step: 10
+          )
+          .tint(.white)
+        }
 
-        Text("Quality").font(.headline)
+        Text("Quality")
+          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
           ForEach(store.availableQualities, id: \.self) { quality in
             settingsChip(
@@ -803,7 +782,8 @@ struct BoardSettingsView: View {
           }
         }
 
-        Text("Country of origin").font(.headline)
+        Text("Country of origin")
+          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
           ForEach(store.availableCountries, id: \.self) { country in
             settingsChip(
@@ -822,20 +802,17 @@ struct BoardSettingsView: View {
   }
 
   private func settingsChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
-    let chipFill = selected ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.surfaceAltGradient)
     return Button(action: action) {
       HStack {
         Text(title)
+          .fontWeight(selected ? .bold : .regular)
           .lineLimit(1)
         Spacer()
         Image(systemName: selected ? "checkmark.circle.fill" : "circle")
       }
       .padding(10)
-      .background(
-        RoundedRectangle(cornerRadius: 0)
-          .fill(chipFill)
-      )
-      .clipShape(RoundedRectangle(cornerRadius: 0))
+      .background(Color.clear)
+      .fragmentedTileBorder()
       .foregroundStyle(StyleTheme.textPrimary)
       .punkTexture(0.24)
     }
@@ -853,7 +830,7 @@ struct BoardDetailView: View {
       VStack(spacing: 0) {
         VStack(alignment: .leading, spacing: 10) {
           Text("Pinterest liked pins")
-            .font(.headline)
+            .font(.custom("RuderPlakatLLTrialTT-Regular", size: 36))
             .foregroundStyle(StyleTheme.textPrimary)
           categoryTabs
         }
@@ -897,8 +874,7 @@ struct BoardDetailView: View {
     } label: {
       VStack(spacing: 6) {
         Text(title)
-          .font(.subheadline)
-          .bold()
+          .font(.system(size: 16, weight: pageSelection == index ? .bold : .regular))
           .foregroundStyle(StyleTheme.textPrimary)
         Rectangle()
           .fill(pageSelection == index ? StyleTheme.accentBright : Color.clear)
@@ -912,7 +888,7 @@ struct BoardDetailView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 12) {
         Text("Pinterest-like pins")
-          .font(.headline)
+          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 34))
           .foregroundStyle(StyleTheme.textPrimary)
         Text("Swipe left for purchases, swipe left again for settings.")
           .font(.caption)
@@ -940,7 +916,7 @@ struct BoardDetailView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 10) {
         Text("Purchases for this moodboard")
-          .font(.headline)
+          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 34))
           .foregroundStyle(StyleTheme.textPrimary)
         let bought = store.boughtProducts(for: board)
         if bought.isEmpty {
@@ -964,8 +940,8 @@ struct BoardDetailView: View {
               Spacer()
             }
             .padding(10)
-            .background(StyleTheme.surfaceAltGradient)
-            .clipShape(RoundedRectangle(cornerRadius: 0))
+            .background(Color.clear)
+            .fragmentedTileBorder()
             .punkTexture(0.24)
           }
         }
@@ -995,7 +971,7 @@ struct BoardDetailView: View {
     return heights[mapped]
   }
 
-  private func pinCard(url: String, height: CGFloat) -> some View {
+  private func pinCard(url _: String, height: CGFloat) -> some View {
     WireframeImageBlock(height: height, cornerRadius: 0, label: "Pin")
       .frame(maxWidth: .infinity)
   }
@@ -1093,7 +1069,7 @@ struct PrototypeRootView: View {
 
     case .boards:
       Text("Select moodboard")
-        .font(.custom("RuderPlakatLLTrialWeb-Regular", size: 126))
+        .font(.custom("RuderPlakatLLTrialTT-Regular", size: 126))
         .lineSpacing(63)
         .tracking(0.6)
         .lineLimit(2)
@@ -1124,10 +1100,13 @@ struct PrototypeRootView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(8)
-            .background(StyleTheme.surfaceGradient)
+            .background(Color.clear)
             .overlay(
-              RoundedRectangle(cornerRadius: 0)
-                .stroke(isSelected ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.borderGradient), lineWidth: 2)
+              Rectangle()
+                .stroke(
+                  StyleTheme.tileStroke,
+                  style: StrokeStyle(lineWidth: isSelected ? 2 : 1, lineCap: .butt, lineJoin: .miter, dash: [28, 16], dashPhase: 1)
+                )
             )
             .punkTexture(0.3)
           }
@@ -1180,7 +1159,7 @@ struct PrototypeRootView: View {
             .foregroundStyle(StyleTheme.textSecondary)
 
           Text(title)
-            .font(.custom("RuderPlakatLLTrialWeb-Regular", size: 126))
+            .font(.custom("RuderPlakatLLTrialTT-Regular", size: 126))
             .lineSpacing(63)
             .tracking(0.9)
             .lineLimit(2)
@@ -1213,10 +1192,10 @@ struct PrototypeRootView: View {
   private func editorialActionLabel(_ title: String) -> some View {
     HStack(spacing: 10) {
       Text(title.uppercased())
-        .font(.headline)
+        .font(.system(size: 18, weight: .bold))
         .tracking(1.1)
       Image(systemName: "arrow.right")
-        .font(.subheadline.weight(.semibold))
+        .font(.subheadline.weight(.bold))
     }
     .foregroundStyle(StyleTheme.textPrimary)
     .padding(.bottom, 8)
@@ -1230,7 +1209,7 @@ struct PrototypeRootView: View {
   private func setupHeroSection(title: String, imageLabel: String, description: String) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text(title)
-        .font(.custom("RuderPlakatLLTrialWeb-Regular", size: 126))
+        .font(.custom("RuderPlakatLLTrialTT-Regular", size: 126))
         .lineSpacing(63)
         .tracking(0.6)
         .lineLimit(2)
@@ -1270,8 +1249,8 @@ struct PrototypeRootView: View {
 
   private var stickyTabHeader: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("StyleMatch")
-        .font(.custom("RuderPlakatLLTrialWeb-Regular", size: 56))
+      Text(activeMainTitle)
+        .font(.custom("RuderPlakatLLTrialTT-Regular", size: 56))
         .foregroundStyle(StyleTheme.textPrimary)
         .lineLimit(1)
         .minimumScaleFactor(0.6)
@@ -1289,7 +1268,7 @@ struct PrototypeRootView: View {
       }
     }
     .padding(.horizontal, 16)
-    .padding(.top, 0)
+    .padding(.top, 20)
     .padding(.bottom, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(StyleTheme.surfaceGradient)
@@ -1315,10 +1294,21 @@ struct PrototypeRootView: View {
     .buttonStyle(.plain)
   }
 
+  private var activeMainTitle: String {
+    switch store.mainTab {
+    case .home:
+      return "Home"
+    case .moodboards:
+      return "Moodboard"
+    case .archive:
+      return "Archive"
+    }
+  }
+
   @ViewBuilder
   private var boardFilterBar: some View {
     Text("Moodboard Filter")
-      .font(.system(.headline, design: .default))
+      .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
       .foregroundStyle(StyleTheme.textPrimary)
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
@@ -1370,7 +1360,7 @@ struct PrototypeRootView: View {
   @ViewBuilder
   private var moodboardsTab: some View {
     Text("Pinterest Moodboards")
-      .font(.system(.headline, design: .default))
+      .font(.custom("RuderPlakatLLTrialTT-Regular", size: 40))
       .foregroundStyle(StyleTheme.textPrimary)
     Text("All selected moodboards with visual covers. Open one to see pins and bought items.")
       .font(.caption)
@@ -1401,10 +1391,8 @@ struct PrototypeRootView: View {
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(8)
-          .background(StyleTheme.surfaceGradient)
-          .overlay(
-            RoundedRectangle(cornerRadius: 0).stroke(StyleTheme.borderGradient, lineWidth: 1)
-          )
+          .background(Color.clear)
+          .fragmentedTileBorder()
           .contentShape(Rectangle())
           .frame(minHeight: 300)
           .punkTexture(0.3)
@@ -1425,7 +1413,7 @@ struct PrototypeRootView: View {
       VStack(alignment: .leading, spacing: 10) {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
           Text(product.title)
-            .font(.custom("RuderPlakatLLTrialWeb-Regular", size: 38))
+            .font(.custom("RuderPlakatLLTrialTT-Regular", size: 38))
             .lineLimit(1)
             .minimumScaleFactor(0.55)
             .foregroundStyle(StyleTheme.textPrimary)
@@ -1463,9 +1451,7 @@ struct PrototypeRootView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(8)
       .background(Color.clear)
-      .overlay(
-        RoundedRectangle(cornerRadius: 0).stroke(StyleTheme.borderGradient, lineWidth: 1)
-      )
+      .fragmentedTileBorder()
       .punkTexture(0.3)
     }
     .frame(height: 304)
@@ -1514,10 +1500,8 @@ struct PrototypeRootView: View {
       .frame(height: cardHeight)
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(8)
-      .background(StyleTheme.surfaceGradient)
-      .overlay(
-        RoundedRectangle(cornerRadius: 0).stroke(StyleTheme.borderGradient, lineWidth: 1)
-      )
+      .background(Color.clear)
+      .fragmentedTileBorder()
       .punkTexture(0.3)
     }
     .frame(height: 170)
@@ -1549,8 +1533,7 @@ struct ProductDetailSheetView: View {
           .tabViewStyle(.page(indexDisplayMode: .automatic))
 
           Text(product.title)
-            .font(.title3)
-            .bold()
+            .font(.custom("RuderPlakatLLTrialTT-Regular", size: 42))
             .foregroundStyle(StyleTheme.textPrimary)
 
           Text("Curated from your moodboard style. This product is ranked higher because fit, shape and overall vibe align with your current board direction.")
@@ -1558,23 +1541,22 @@ struct ProductDetailSheetView: View {
             .foregroundStyle(StyleTheme.textSecondary)
 
           VStack(spacing: 0) {
+            Rectangle().fill(StyleTheme.tableStroke).frame(height: 1)
             infoRow(title: "Price", value: "CHF \(product.priceCHF)")
-            Divider()
+            Rectangle().fill(StyleTheme.tableStroke).frame(height: 1)
             infoRow(title: "Brand", value: product.brand)
-            Divider()
+            Rectangle().fill(StyleTheme.tableStroke).frame(height: 1)
             infoRow(title: "Designer", value: product.designer)
-            Divider()
+            Rectangle().fill(StyleTheme.tableStroke).frame(height: 1)
             infoRow(title: "Shop", value: product.shop)
-            Divider()
+            Rectangle().fill(StyleTheme.tableStroke).frame(height: 1)
             infoRow(title: "Moodboard", value: store.boardName(for: product.boardID))
+            Rectangle().fill(StyleTheme.tableStroke).frame(height: 1)
           }
-          .background(StyleTheme.surfaceAltGradient)
-          .clipShape(RoundedRectangle(cornerRadius: 0))
-          .punkTexture(0.28)
+          .background(Color.clear)
 
           Text("Buy now")
-            .font(.title2)
-            .bold()
+            .font(.custom("RuderPlakatLLTrialTT-Regular", size: 38))
             .foregroundStyle(StyleTheme.textPrimary)
 
           Button("Buy now") {
@@ -1589,17 +1571,31 @@ struct ProductDetailSheetView: View {
           .punkTexture(0.3)
 
           HStack(spacing: 24) {
-            iconAction(symbol: "hand.thumbsup", label: "Like") {}
-            iconAction(symbol: "hand.thumbsdown", label: "Dislike") {}
+            iconAction(
+              symbol: store.likedProductIDs.contains(product.id) ? "hand.thumbsup.fill" : "hand.thumbsup",
+              label: "Like",
+              isActive: store.likedProductIDs.contains(product.id)
+            ) {
+              store.toggleLike(product)
+            }
+            iconAction(
+              symbol: store.dislikedProductIDs.contains(product.id) ? "hand.thumbsdown.fill" : "hand.thumbsdown",
+              label: "Dislike",
+              isActive: store.dislikedProductIDs.contains(product.id)
+            ) {
+              store.toggleDislike(product)
+            }
             iconAction(
               symbol: store.archivedProductIDs.contains(product.id) ? "archivebox.fill" : "archivebox",
-              label: "Archive"
+              label: "Archive",
+              isActive: store.archivedProductIDs.contains(product.id)
             ) {
               store.toggleArchive(product)
             }
             iconAction(
               symbol: store.boughtProductIDs.contains(product.id) ? "bag.fill" : "bag",
-              label: "Bought"
+              label: "Bought",
+              isActive: store.boughtProductIDs.contains(product.id)
             ) {
               store.toggleBought(product)
             }
@@ -1609,11 +1605,14 @@ struct ProductDetailSheetView: View {
         .padding(16)
       }
       .navigationTitle("Product")
+      .tint(StyleTheme.textPrimary)
       .toolbarBackground(StyleTheme.surfaceGradient, for: .navigationBar)
       .toolbarBackground(.visible, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button("Done") { store.selectedProduct = nil }
+            .font(.system(size: 16, weight: .bold))
+            .foregroundStyle(StyleTheme.textPrimary)
         }
       }
     }
@@ -1634,7 +1633,7 @@ struct ProductDetailSheetView: View {
     .padding(.vertical, 10)
   }
 
-  private func iconAction(symbol: String, label: String, action: @escaping () -> Void) -> some View {
+  private func iconAction(symbol: String, label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       VStack(spacing: 6) {
         Image(systemName: symbol)
@@ -1642,7 +1641,7 @@ struct ProductDetailSheetView: View {
         Text(label)
           .font(.caption2)
       }
-      .foregroundStyle(StyleTheme.textPrimary)
+      .foregroundStyle(isActive ? Color.white : StyleTheme.textSecondary)
     }
     .buttonStyle(.plain)
   }
