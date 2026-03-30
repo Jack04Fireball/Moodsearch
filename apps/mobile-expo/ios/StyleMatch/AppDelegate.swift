@@ -2,30 +2,27 @@ import UIKit
 import SwiftUI
 
 enum StyleTheme {
-  static let titleFontName = "HelveticaLT-Bold2"
-  static let bodyFontName = "Unica77LL-Regular"
+  // Wireframe-only palette
+  static let bg = Color(red: 0.96, green: 0.96, blue: 0.96)
+  static let surface = Color.white
+  static let surfaceAlt = Color(red: 0.93, green: 0.93, blue: 0.93)
+  static let border = Color(red: 0.72, green: 0.72, blue: 0.72)
+  static let placeholder = Color(red: 0.84, green: 0.84, blue: 0.84)
 
-  // UI_Design board direction: deep black base, cool gray hierarchy, subtle blue/magenta accents.
-  static let bg = Color.black
-  static let surface = Color(red: 0.04, green: 0.04, blue: 0.04)
-  static let surfaceAlt = Color(red: 0.07, green: 0.07, blue: 0.07)
-  static let border = Color.white.opacity(0.16)
-  static let placeholder = Color(red: 0.42, green: 0.42, blue: 0.42)
+  static let textPrimary = Color.black
+  static let textSecondary = Color(red: 0.28, green: 0.28, blue: 0.28)
+  static let textTertiary = Color(red: 0.45, green: 0.45, blue: 0.45)
+  static let badgeNeutral = Color(red: 0.32, green: 0.32, blue: 0.32)
 
-  static let textPrimary = Color(red: 0.94, green: 0.94, blue: 0.94)
-  static let textSecondary = Color(red: 0.76, green: 0.76, blue: 0.78)
-  static let textTertiary = Color(red: 0.58, green: 0.58, blue: 0.60)
-  static let badgeNeutral = Color(red: 0.85, green: 0.85, blue: 0.85)
-
-  static let accent = Color(red: 0.74, green: 0.79, blue: 0.88)
-  static let accentBright = Color(red: 0.86, green: 0.90, blue: 0.98)
+  static let accent = Color.black
+  static let accentBright = Color.black
   static let accentGradient = LinearGradient(
-    colors: [Color(red: 0.72, green: 0.76, blue: 0.84), Color(red: 0.66, green: 0.69, blue: 0.78), Color(red: 0.55, green: 0.58, blue: 0.66)],
+    colors: [Color.black, Color.black],
     startPoint: .topLeading,
     endPoint: .bottomTrailing
   )
   static let h1Gradient = LinearGradient(
-    colors: [Color(red: 0.90, green: 0.90, blue: 0.93), Color(red: 0.73, green: 0.77, blue: 0.85)],
+    colors: [Color.black, Color.black],
     startPoint: .leading,
     endPoint: .trailing
   )
@@ -39,57 +36,26 @@ enum StyleTheme {
   static let blackCTA = surfaceAlt
 
   // Typography tuning
-  static let posterH1Size: CGFloat = 118
-  static let posterH1LineSpacing: CGFloat = 8
-  static let sectionH1Size: CGFloat = 88
-  static let sectionH1LineSpacing: CGFloat = 4
-  static let appHeaderH1Size: CGFloat = 82
+  static let posterH1Size: CGFloat = 64
+  static let posterH1LineSpacing: CGFloat = 2
+  static let sectionH1Size: CGFloat = 44
+  static let sectionH1LineSpacing: CGFloat = 1
+  static let appHeaderH1Size: CGFloat = 56
 
   static func titleFont(_ size: CGFloat) -> Font {
-    if UIFont(name: titleFontName, size: size) != nil {
-      return .custom(titleFontName, size: size)
-    }
     return .system(size: size, weight: .bold, design: .default)
   }
 
   static func bodyFont(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-    if UIFont(name: bodyFontName, size: size) != nil {
-      return .custom(bodyFontName, size: size)
-    }
     return .system(size: size, weight: weight, design: .default)
   }
 
-  static let dashedStroke = StrokeStyle(lineWidth: 1, lineCap: .butt, lineJoin: .miter, dash: [14, 10])
+  static let dashedStroke = StrokeStyle(lineWidth: 1)
 }
 
 struct NoiseOverlay: View {
   var body: some View {
-    GeometryReader { _ in
-      Canvas { context, size in
-        let w = max(1, Int(size.width))
-        let h = max(1, Int(size.height))
-
-        let brightDots = max(1800, Int(size.width * size.height / 420))
-        for i in 0..<brightDots {
-          let x = CGFloat((i * 73 + 17) % w)
-          let y = CGFloat((i * 97 + 29) % h)
-          let alpha = 0.018 + Double((i * 31) % 19) / 115.0
-          let rect = CGRect(x: x, y: y, width: 1.15, height: 1.15)
-          context.fill(Path(rect), with: .color(.white.opacity(alpha)))
-        }
-
-        let darkDots = max(1400, Int(size.width * size.height / 520))
-        for i in 0..<darkDots {
-          let x = CGFloat((i * 83 + 41) % w)
-          let y = CGFloat((i * 59 + 13) % h)
-          let alpha = 0.014 + Double((i * 23) % 17) / 130.0
-          let rect = CGRect(x: x, y: y, width: 1.0, height: 1.0)
-          context.fill(Path(rect), with: .color(.black.opacity(alpha)))
-        }
-      }
-      .blendMode(.overlay)
-      .opacity(0.62)
-    }
+    EmptyView()
     .allowsHitTesting(false)
   }
 }
@@ -99,12 +65,6 @@ struct PunkTextureModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .overlay(
-        NoiseOverlay()
-          .opacity(opacity)
-          .blendMode(.overlay)
-          .allowsHitTesting(false)
-      )
   }
 }
 
@@ -1042,7 +1002,6 @@ struct PrototypeRootView: View {
     NavigationStack {
       ZStack {
         StyleTheme.bgGradient.ignoresSafeArea()
-        NoiseOverlay().ignoresSafeArea()
 
         Group {
           if store.setupStep != .done {
@@ -1070,7 +1029,6 @@ struct PrototypeRootView: View {
         BoardDetailView(store: store, board: board)
       }
     }
-    .preferredColorScheme(.dark)
   }
 
   @ViewBuilder
@@ -1198,13 +1156,6 @@ struct PrototypeRootView: View {
         WireframeImageBlock(height: proxy.size.height, label: imageLabel)
           .frame(maxWidth: .infinity, maxHeight: .infinity)
           .clipped()
-
-        LinearGradient(
-          colors: [Color.black.opacity(0.08), Color.black.opacity(0.22), Color.black.opacity(0.74)],
-          startPoint: .top,
-          endPoint: .bottom
-        )
-        .ignoresSafeArea()
 
         VStack(alignment: .leading, spacing: 12) {
           Text(posterIndex)
