@@ -162,6 +162,39 @@ struct WireframeImageBlock: View {
   }
 }
 
+struct MoodboardImageBlock: View {
+  let urlString: String?
+  let width: CGFloat?
+  let height: CGFloat
+  let label: String
+
+  init(urlString: String?, width: CGFloat? = nil, height: CGFloat, label: String) {
+    self.urlString = urlString
+    self.width = width
+    self.height = height
+    self.label = label
+  }
+
+  var body: some View {
+    if let urlString, let url = URL(string: urlString) {
+      AsyncImage(url: url) { phase in
+        switch phase {
+        case .success(let image):
+          image
+            .resizable()
+            .scaledToFill()
+            .frame(width: width, height: height)
+            .clipped()
+        default:
+          WireframeImageBlock(width: width, height: height, label: label)
+        }
+      }
+    } else {
+      WireframeImageBlock(width: width, height: height, label: label)
+    }
+  }
+}
+
 struct SwipeableCard<Content: View>: View {
   let onTap: () -> Void
   let onSwipeLeft: () -> Void
@@ -285,32 +318,32 @@ final class PrototypeStore: ObservableObject {
     let boards = [
       Moodboard(
         id: UUID(),
-        name: "Minimal Outfits",
-        coverImageURL: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200",
+        name: "High class",
+        coverImageURL: "https://i.pinimg.com/474x/b9/c2/4f/b9c24f3ff89dffa6c712c93a773e93e9.jpg",
         pinImageURLs: [
-          "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800",
-          "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800",
-          "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=800"
+          "https://i.pinimg.com/474x/dc/ea/04/dcea046c1a82622f1fad8a09219b2b10.jpg",
+          "https://i.pinimg.com/474x/b9/72/34/b97234a5bcade88a2e673fc62677a7ac.jpg",
+          "https://i.pinimg.com/474x/09/a5/1f/09a51f403ec344efe26d21b47b83d2c1.jpg"
         ]
       ),
       Moodboard(
         id: UUID(),
-        name: "Streetwear Looks",
-        coverImageURL: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1200",
+        name: "Ozzy",
+        coverImageURL: "https://i.pinimg.com/474x/cf/fd/5e/cffd5eb2141a91bf92bb6704a3a03ff3.jpg",
         pinImageURLs: [
-          "https://images.unsplash.com/photo-1495121605193-b116b5b09a6b?w=800",
-          "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800",
-          "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800"
+          "https://i.pinimg.com/474x/99/79/0a/99790a9461c84355d905cd8bf2a043af.jpg",
+          "https://i.pinimg.com/474x/0d/9c/2b/0d9c2b46292de13c72e0b8a59fc0a017.jpg",
+          "https://i.pinimg.com/474x/2a/29/f4/2a29f42ef0b56589add2f45361d7b203.jpg"
         ]
       ),
       Moodboard(
         id: UUID(),
-        name: "Tailored Essentials",
-        coverImageURL: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=1200",
+        name: "Treeenddyy girllzzz",
+        coverImageURL: "https://i.pinimg.com/474x/e5/eb/9e/e5eb9e42f63528763fc8157e6b0a68c3.jpg",
         pinImageURLs: [
-          "https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?w=800",
-          "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800",
-          "https://images.unsplash.com/photo-1445205170230-053b83016050?w=800"
+          "https://i.pinimg.com/474x/59/1f/ba/591fba12340fb17f37b7c17251f72759.jpg",
+          "https://i.pinimg.com/474x/0a/f7/2a/0af72adfaeaf8af2261006ae7202fb6b.jpg",
+          "https://i.pinimg.com/474x/8e/51/99/8e51999a5b78ed0e3a9729056be5828c.jpg"
         ]
       ),
       Moodboard(
@@ -1072,7 +1105,7 @@ struct BoardDetailView: View {
   }
 
   private func pinCard(url: String, height: CGFloat) -> some View {
-    WireframeImageBlock(height: height, label: "Pin")
+    MoodboardImageBlock(urlString: url, height: height, label: "Pin")
       .frame(maxWidth: .infinity)
   }
 }
@@ -1211,7 +1244,11 @@ struct PrototypeRootView: View {
           } label: {
             VStack(alignment: .leading, spacing: 8) {
               ZStack(alignment: .topTrailing) {
-                WireframeImageBlock(height: 162, label: "Moodboard")
+                MoodboardImageBlock(
+                  urlString: board.coverImageURL,
+                  height: 162,
+                  label: "Moodboard"
+                )
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                   .font(.system(size: 20, weight: .semibold))
                   .foregroundStyle(isSelected ? StyleTheme.accentBright : StyleTheme.textSecondary)
@@ -1486,11 +1523,23 @@ struct PrototypeRootView: View {
           store.selectedMoodboard = board
         } label: {
           VStack(alignment: .leading, spacing: 8) {
-            WireframeImageBlock(height: 124, label: "Moodboard Cover")
+            MoodboardImageBlock(
+              urlString: board.coverImageURL,
+              height: 124,
+              label: "Moodboard Cover"
+            )
             HStack(spacing: 8) {
-              WireframeImageBlock(height: 124, label: "Pin")
+              MoodboardImageBlock(
+                urlString: board.pinImageURLs.first,
+                height: 124,
+                label: "Pin"
+              )
                 .frame(maxWidth: .infinity)
-              WireframeImageBlock(height: 124, label: "Pin")
+              MoodboardImageBlock(
+                urlString: board.pinImageURLs.dropFirst().first,
+                height: 124,
+                label: "Pin"
+              )
                 .frame(maxWidth: .infinity)
             }
 
