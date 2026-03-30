@@ -1,28 +1,32 @@
 import UIKit
 import SwiftUI
+import AuthenticationServices
 
 enum StyleTheme {
-  // Wireframe-only palette
-  static let bg = Color(red: 0.96, green: 0.96, blue: 0.96)
-  static let surface = Color.white
-  static let surfaceAlt = Color(red: 0.93, green: 0.93, blue: 0.93)
-  static let border = Color(red: 0.72, green: 0.72, blue: 0.72)
-  static let placeholder = Color(red: 0.84, green: 0.84, blue: 0.84)
+  static let titleFontName = "HelveticaLT-Bold2"
+  static let bodyFontName = "Unica77LL-Regular"
 
-  static let textPrimary = Color.black
-  static let textSecondary = Color(red: 0.28, green: 0.28, blue: 0.28)
-  static let textTertiary = Color(red: 0.45, green: 0.45, blue: 0.45)
-  static let badgeNeutral = Color(red: 0.32, green: 0.32, blue: 0.32)
+  // Swiss-style palette: black field, white type, restrained neutral placeholders.
+  static let bg = Color.black
+  static let surface = Color.black
+  static let surfaceAlt = Color.black
+  static let border = Color.white.opacity(0.28)
+  static let placeholder = Color(red: 0.35, green: 0.35, blue: 0.35)
 
-  static let accent = Color.black
-  static let accentBright = Color.black
+  static let textPrimary = Color.white
+  static let textSecondary = Color(red: 0.82, green: 0.82, blue: 0.82)
+  static let textTertiary = Color(red: 0.66, green: 0.66, blue: 0.66)
+  static let badgeNeutral = Color(red: 0.90, green: 0.90, blue: 0.90)
+
+  static let accent = Color.white
+  static let accentBright = Color.white
   static let accentGradient = LinearGradient(
-    colors: [Color.black, Color.black],
+    colors: [Color.white, Color.white],
     startPoint: .topLeading,
     endPoint: .bottomTrailing
   )
   static let h1Gradient = LinearGradient(
-    colors: [Color.black, Color.black],
+    colors: [Color.white, Color.white],
     startPoint: .leading,
     endPoint: .trailing
   )
@@ -36,17 +40,23 @@ enum StyleTheme {
   static let blackCTA = surfaceAlt
 
   // Typography tuning
-  static let posterH1Size: CGFloat = 64
+  static let posterH1Size: CGFloat = 120
   static let posterH1LineSpacing: CGFloat = 2
-  static let sectionH1Size: CGFloat = 44
+  static let sectionH1Size: CGFloat = 70
   static let sectionH1LineSpacing: CGFloat = 1
-  static let appHeaderH1Size: CGFloat = 56
+  static let appHeaderH1Size: CGFloat = 96
 
   static func titleFont(_ size: CGFloat) -> Font {
+    if UIFont(name: titleFontName, size: size) != nil {
+      return .custom(titleFontName, size: size)
+    }
     return .system(size: size, weight: .bold, design: .default)
   }
 
   static func bodyFont(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+    if UIFont(name: bodyFontName, size: size) != nil {
+      return .custom(bodyFontName, size: size)
+    }
     return .system(size: size, weight: weight, design: .default)
   }
 
@@ -55,7 +65,7 @@ enum StyleTheme {
 
 struct NoiseOverlay: View {
   var body: some View {
-    EmptyView()
+    Color.clear
     .allowsHitTesting(false)
   }
 }
@@ -71,6 +81,18 @@ struct PunkTextureModifier: ViewModifier {
 extension View {
   func punkTexture(_ opacity: Double = 0.34) -> some View {
     modifier(PunkTextureModifier(opacity: opacity))
+  }
+}
+
+final class AuthPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
+  func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+    guard
+      let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+      let window = windowScene.windows.first
+    else {
+      return ASPresentationAnchor()
+    }
+    return window
   }
 }
 
@@ -130,7 +152,7 @@ struct WireframeImageBlock: View {
           .font(.system(size: 16, weight: .semibold))
           .foregroundStyle(StyleTheme.textTertiary)
         Text(label)
-          .font(.caption2)
+          .font(StyleTheme.bodyFont(10))
           .foregroundStyle(StyleTheme.textTertiary)
       }
     }
@@ -232,6 +254,9 @@ final class PrototypeStore: ObservableObject {
   @Published var likedProductIDs: Set<UUID> = []
   @Published var dislikedProductIDs: Set<UUID> = []
   @Published var hasAcceptedCompliance: Bool = false
+  @Published var pinterestConnectedUsername: String? = nil
+  @Published var pinterestAuthError: String? = nil
+  @Published var isPinterestConnecting: Bool = false
 
   let availableDesigners: [String]
   let availableBrands: [String]
@@ -239,8 +264,12 @@ final class PrototypeStore: ObservableObject {
   let availableCountries: [String]
   let allBoards: [Moodboard]
   let allProducts: [Product]
+  private let apiBaseURL: String
+  private let authPresentationContext = AuthPresentationContextProvider()
+  private var authSession: ASWebAuthenticationSession?
 
   init() {
+    self.apiBaseURL = (Bundle.main.object(forInfoDictionaryKey: "StyleMatchAPIBaseURL") as? String) ?? "http://10.5.8.80:4000"
     self.availableDesigners = [
       "Rick Owens", "Maison Margiela", "Acne Studios", "Helmut Lang", "Jil Sander",
       "Prada", "Lemaire", "Our Legacy", "Ami Paris", "Yohji Yamamoto"
@@ -424,6 +453,59 @@ final class PrototypeStore: ObservableObject {
   }
 
   func connectPinterest() {
+    let redirectURI = "stylematch://auth"
+    guard let encodedRedirect = redirectURI.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+          let authURL = URL(string: "\(apiBaseURL)/v1/auth/pinterest?redirect=\(encodedRedirect)") else {
+      pinterestAuthError = "Pinterest login configuration is invalid."
+      return
+    }
+
+    pinterestAuthError = nil
+    isPinterestConnecting = true
+
+    let session = ASWebAuthenticationSession(url: authURL, callbackURLScheme: "stylematch") { [weak self] callbackURL, error in
+      DispatchQueue.main.async {
+        guard let self else { return }
+        self.isPinterestConnecting = false
+
+        if let error {
+          self.pinterestAuthError = "Pinterest login failed: \(error.localizedDescription)"
+          return
+        }
+
+        guard let callbackURL else {
+          self.pinterestAuthError = "No callback URL was returned."
+          return
+        }
+
+        let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false)
+        let items = components?.queryItems ?? []
+        let token = items.first(where: { $0.name == "token" })?.value ?? ""
+        let username = items.first(where: { $0.name == "username" })?.value
+        let errorMessage = items.first(where: { $0.name == "error" })?.value
+
+        if !token.isEmpty {
+          self.pinterestConnectedUsername = username
+          self.pinterestAuthError = nil
+          self.setupStep = .boards
+        } else {
+          self.pinterestAuthError = errorMessage ?? "Pinterest callback did not include a token."
+        }
+      }
+    }
+
+    session.presentationContextProvider = authPresentationContext
+    session.prefersEphemeralWebBrowserSession = false
+    authSession = session
+
+    if !session.start() {
+      isPinterestConnecting = false
+      pinterestAuthError = "Could not open Pinterest login."
+    }
+  }
+
+  func continueWithoutPinterest() {
+    pinterestAuthError = nil
     setupStep = .boards
   }
 
@@ -474,6 +556,9 @@ final class PrototypeStore: ObservableObject {
     likedProductIDs = []
     dislikedProductIDs = []
     hasAcceptedCompliance = false
+    pinterestConnectedUsername = nil
+    pinterestAuthError = nil
+    isPinterestConnecting = false
   }
 
   func acknowledgeCompliance() {
@@ -719,11 +804,19 @@ struct BoardSettingsView: View {
         Text("Brand").font(StyleTheme.titleFont(20))
         HStack {
           TextField("Add brand", text: $customBrandName)
-            .textFieldStyle(.roundedBorder)
+            .font(StyleTheme.bodyFont(14))
+            .foregroundStyle(StyleTheme.textPrimary)
+            .textInputAutocapitalization(.words)
+            .autocorrectionDisabled(true)
+            .padding(.vertical, 6)
+            .overlay(alignment: .bottom) {
+              Rectangle().fill(StyleTheme.border).frame(height: 1)
+            }
           Button("Add") {
             store.addCustomBrand(for: board.id, name: customBrandName)
             customBrandName = ""
           }
+          .font(StyleTheme.titleFont(14))
         }
 
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
@@ -740,11 +833,19 @@ struct BoardSettingsView: View {
         Text("Designer").font(StyleTheme.titleFont(20))
         HStack {
           TextField("Add designer", text: $customDesignerName)
-            .textFieldStyle(.roundedBorder)
+            .font(StyleTheme.bodyFont(14))
+            .foregroundStyle(StyleTheme.textPrimary)
+            .textInputAutocapitalization(.words)
+            .autocorrectionDisabled(true)
+            .padding(.vertical, 6)
+            .overlay(alignment: .bottom) {
+              Rectangle().fill(StyleTheme.border).frame(height: 1)
+            }
           Button("Add") {
             store.addCustomDesigner(for: board.id, name: customDesignerName)
             customDesignerName = ""
           }
+          .font(StyleTheme.titleFont(14))
         }
 
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
@@ -811,21 +912,16 @@ struct BoardSettingsView: View {
   }
 
   private func settingsChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
-    let chipFill = selected ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.surfaceAltGradient)
     return Button(action: action) {
       HStack {
         Text(title)
+          .font(StyleTheme.bodyFont(14, weight: selected ? .semibold : .regular))
           .lineLimit(1)
         Spacer()
         Image(systemName: selected ? "checkmark.circle.fill" : "circle")
       }
       .padding(10)
-      .background(
-        Rectangle()
-          .fill(chipFill)
-      )
-      .clipShape(Rectangle())
-      .foregroundStyle(StyleTheme.textPrimary)
+      .foregroundStyle(selected ? StyleTheme.textPrimary : StyleTheme.textSecondary)
       .punkTexture(0.24)
     }
     .buttonStyle(.plain)
@@ -849,7 +945,6 @@ struct BoardDetailView: View {
         .padding(.horizontal, 16)
         .padding(.top, 10)
         .padding(.bottom, 8)
-        .background(StyleTheme.surfaceGradient)
         .punkTexture(0.25)
 
         TabView(selection: $pageSelection) {
@@ -952,11 +1047,7 @@ struct BoardDetailView: View {
               Spacer()
             }
             .padding(10)
-            .background(StyleTheme.surfaceAltGradient)
-            .clipShape(Rectangle())
-            .overlay(
-              Rectangle().stroke(StyleTheme.borderGradient, style: StyleTheme.dashedStroke)
-            )
+            .background(Color.clear)
             .punkTexture(0.24)
           }
         }
@@ -1073,10 +1164,33 @@ struct PrototypeRootView: View {
         imageLabel: "Login",
         description: "Connect your Pinterest account to load your liked pins and selected moodboards."
       )
+      if let username = store.pinterestConnectedUsername {
+        Text("Connected as \(username)")
+          .font(StyleTheme.bodyFont(13, weight: .semibold))
+          .foregroundStyle(StyleTheme.textSecondary)
+      }
+      if let authError = store.pinterestAuthError {
+        Text(authError)
+          .font(StyleTheme.bodyFont(13))
+          .foregroundStyle(StyleTheme.textSecondary)
+      }
+      if store.isPinterestConnecting {
+        ProgressView("Opening Pinterest login...")
+          .font(StyleTheme.bodyFont(13))
+          .foregroundStyle(StyleTheme.textSecondary)
+      }
       Button {
         store.connectPinterest()
       } label: {
-        editorialActionLabel("Connect Pinterest")
+        editorialActionLabel(store.isPinterestConnecting ? "Connecting..." : "Connect Pinterest")
+      }
+      .disabled(store.isPinterestConnecting)
+      .buttonStyle(.plain)
+
+      Button {
+        store.continueWithoutPinterest()
+      } label: {
+        editorialActionLabel("Continue without login")
       }
       .buttonStyle(.plain)
 
@@ -1089,7 +1203,14 @@ struct PrototypeRootView: View {
         .minimumScaleFactor(0.25)
         .foregroundStyle(StyleTheme.textPrimary)
       TextField("Search board name", text: $store.boardSearch)
-        .textFieldStyle(.roundedBorder)
+        .font(StyleTheme.bodyFont(16))
+        .foregroundStyle(StyleTheme.textPrimary)
+        .textInputAutocapitalization(.never)
+        .autocorrectionDisabled(true)
+        .padding(.vertical, 8)
+        .overlay(alignment: .bottom) {
+          Rectangle().fill(StyleTheme.border).frame(height: 1)
+        }
 
       LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
         ForEach(store.filteredBoards) { board in
@@ -1113,13 +1234,6 @@ struct PrototypeRootView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(8)
             .background(Color.clear)
-            .overlay(
-              Rectangle()
-                .stroke(
-                  isSelected ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(StyleTheme.borderGradient),
-                  style: StyleTheme.dashedStroke
-                )
-            )
             .punkTexture(0.3)
           }
           .buttonStyle(.plain)
@@ -1204,12 +1318,6 @@ struct PrototypeRootView: View {
         .font(.system(size: 15, weight: .semibold))
     }
     .foregroundStyle(StyleTheme.textPrimary)
-    .padding(.bottom, 8)
-    .overlay(alignment: .bottomLeading) {
-      Rectangle()
-        .fill(StyleTheme.accentGradient)
-        .frame(height: 2.5)
-    }
   }
 
   private func setupHeroSection(title: String, imageLabel: String, description: String) -> some View {
@@ -1264,7 +1372,7 @@ struct PrototypeRootView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .foregroundStyle(StyleTheme.h1Gradient)
 
-      HStack(spacing: 18) {
+      HStack(spacing: 12) {
         ForEach([MainTab.home, MainTab.moodboards, MainTab.archive], id: \.self) { tab in
           secondaryTabButton(tab: tab, isActive: store.mainTab == tab) {
             store.mainTab = tab
@@ -1276,28 +1384,16 @@ struct PrototypeRootView: View {
     .padding(.top, 20)
     .padding(.bottom, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
-    .background(StyleTheme.bg)
     .punkTexture(0.2)
-    .overlay(alignment: .bottom) {
-      Rectangle()
-        .fill(StyleTheme.border)
-        .frame(height: 1)
-    }
   }
 
   private func secondaryTabButton(tab: MainTab, isActive: Bool, action: @escaping () -> Void) -> some View {
     return Button(action: action) {
-      VStack(alignment: .leading, spacing: 6) {
-        Text(title(for: tab).uppercased())
-          .font(StyleTheme.bodyFont(18, weight: isActive ? .semibold : .regular))
-          .tracking(1.1)
-          .foregroundStyle(isActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
-
-        Rectangle()
-          .fill(isActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(Color.clear))
-          .frame(height: 2.2)
-      }
-      .padding(.horizontal, 2)
+      Text(title(for: tab).uppercased())
+        .font(StyleTheme.bodyFont(18, weight: isActive ? .semibold : .regular))
+        .tracking(1.1)
+        .foregroundStyle(isActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.vertical, 4)
     }
     .buttonStyle(.plain)
@@ -1322,32 +1418,24 @@ struct PrototypeRootView: View {
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
         let allIsActive = store.activeBoardFilter == nil
-        Button(store.activeBoardFilter == nil ? "[All]" : "All") {
+        Button("All") {
           store.activeBoardFilter = nil
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
+        .font(StyleTheme.bodyFont(14, weight: allIsActive ? .semibold : .regular))
         .foregroundStyle(allIsActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
-        .overlay(alignment: .bottom) {
-          Rectangle()
-            .fill(allIsActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(Color.clear))
-            .frame(height: 2)
-        }
         .buttonStyle(.plain)
 
         ForEach(store.selectedBoards) { board in
           let boardIsActive = store.activeBoardFilter == board.id
-          Button(store.activeBoardFilter == board.id ? "[\(board.name)]" : board.name) {
+          Button(board.name) {
             store.activeBoardFilter = board.id
           }
           .padding(.horizontal, 8)
           .padding(.vertical, 6)
+          .font(StyleTheme.bodyFont(14, weight: boardIsActive ? .semibold : .regular))
           .foregroundStyle(boardIsActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
-          .overlay(alignment: .bottom) {
-            Rectangle()
-              .fill(boardIsActive ? AnyShapeStyle(StyleTheme.accentGradient) : AnyShapeStyle(Color.clear))
-              .frame(height: 2)
-          }
           .buttonStyle(.plain)
         }
       }
@@ -1410,9 +1498,6 @@ struct PrototypeRootView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(8)
           .background(Color.clear)
-          .overlay(
-            Rectangle().stroke(StyleTheme.borderGradient, style: StyleTheme.dashedStroke)
-          )
           .contentShape(Rectangle())
           .frame(minHeight: 300)
           .punkTexture(0.3)
@@ -1471,9 +1556,6 @@ struct PrototypeRootView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(8)
       .background(Color.clear)
-      .overlay(
-        Rectangle().stroke(StyleTheme.borderGradient, style: StyleTheme.dashedStroke)
-      )
       .punkTexture(0.3)
     }
     .frame(height: 186)
@@ -1522,9 +1604,6 @@ struct PrototypeRootView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(8)
       .background(Color.clear)
-      .overlay(
-        Rectangle().stroke(StyleTheme.borderGradient, style: StyleTheme.dashedStroke)
-      )
       .punkTexture(0.3)
     }
     .frame(height: 170)
@@ -1592,14 +1671,8 @@ struct ProductDetailSheetView: View {
           }
           .font(StyleTheme.titleFont(22))
           .foregroundStyle(StyleTheme.textPrimary)
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 14)
-          .background(StyleTheme.ctaGradient)
-          .clipShape(Rectangle())
-          .overlay(
-            Rectangle().stroke(StyleTheme.borderGradient, style: StyleTheme.dashedStroke)
-          )
-          .punkTexture(0.3)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.vertical, 6)
 
           HStack(spacing: 24) {
             iconAction(
@@ -1636,8 +1709,6 @@ struct ProductDetailSheetView: View {
         .padding(16)
       }
       .navigationTitle("Product")
-      .toolbarBackground(StyleTheme.surfaceGradient, for: .navigationBar)
-      .toolbarBackground(.visible, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button("Done") { store.selectedProduct = nil }
