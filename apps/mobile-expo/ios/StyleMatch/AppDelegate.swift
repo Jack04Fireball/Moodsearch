@@ -1,5 +1,7 @@
 import UIKit
 import SwiftUI
+import Foundation
+import AuthenticationServices
 
 enum StyleTheme {
   static let bgBase = Color.black
@@ -99,13 +101,24 @@ extension View {
   }
 
   func fragmentedTileBorder(_ lineWidth: CGFloat = 1) -> some View {
-    overlay(
-      Rectangle()
-        .stroke(
-          StyleTheme.tileStroke,
-          style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt, lineJoin: .miter, dash: [28, 16], dashPhase: 1)
-        )
-    )
+    self
+  }
+
+  func styleMatchH1() -> some View {
+    self
+      .font(.custom("RuderPlakatLLTrialTT-Regular", size: 126))
+      .lineSpacing(6)
+      .tracking(0.55)
+      .lineLimit(2)
+      .minimumScaleFactor(0.25)
+      .foregroundStyle(StyleTheme.textPrimary)
+  }
+
+  func styleMatchH3() -> some View {
+    self
+      .font(.system(size: 28, weight: .regular))
+      .tracking(1.25)
+      .foregroundStyle(StyleTheme.textPrimary)
   }
 }
 
@@ -126,6 +139,7 @@ enum MainTab {
 
 struct Moodboard: Identifiable, Hashable {
   let id: UUID
+  let pinterestBoardID: String?
   let name: String
   let pinImageURLs: [String]
 }
@@ -159,12 +173,6 @@ struct WireframeImageBlock: View {
     ZStack {
       RoundedRectangle(cornerRadius: cornerRadius)
         .fill(StyleTheme.placeholder)
-
-      RoundedRectangle(cornerRadius: cornerRadius)
-        .stroke(
-          StyleTheme.tileStroke,
-          style: StrokeStyle(lineWidth: 1, lineCap: .butt, lineJoin: .miter, dash: [26, 14], dashPhase: 1)
-        )
 
       VStack(spacing: 4) {
         Image(systemName: "photo")
@@ -242,6 +250,17 @@ struct SwipeableCard<Content: View>: View {
   }
 }
 
+final class OAuthPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
+  static let shared = OAuthPresentationContextProvider()
+
+  func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+    UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .flatMap(\.windows)
+      .first { $0.isKeyWindow } ?? UIWindow()
+  }
+}
+
 final class PrototypeStore: ObservableObject {
   @Published var setupStep: SetupStep = .intro1
   @Published var mainTab: MainTab = .home
@@ -270,15 +289,24 @@ final class PrototypeStore: ObservableObject {
   @Published var boughtProductIDs: Set<UUID> = []
   @Published var likedProductIDs: Set<UUID> = []
   @Published var dislikedProductIDs: Set<UUID> = []
+  @Published var authToken: String? = nil
+  @Published var authUsername: String? = nil
+  @Published var connectError: String? = nil
+  @Published var isConnectingPinterest: Bool = false
 
   let availableDesigners: [String]
   let availableBrands: [String]
   let availableQualities: [String]
   let availableCountries: [String]
-  let allBoards: [Moodboard]
-  let allProducts: [Product]
+  @Published var allBoards: [Moodboard] = []
+  @Published var allProducts: [Product] = []
+  private let apiBaseURL: URL
+  private var oauthSession: ASWebAuthenticationSession?
 
   init() {
+    let baseURLString = (Bundle.main.object(forInfoDictionaryKey: "StyleMatchAPIBaseURL") as? String) ?? "http://10.5.8.80:4000"
+    self.apiBaseURL = URL(string: baseURLString) ?? URL(string: "http://10.5.8.80:4000")!
+
     self.availableDesigners = [
       "Rick Owens", "Maison Margiela", "Acne Studios", "Helmut Lang", "Jil Sander",
       "Prada", "Lemaire", "Our Legacy", "Ami Paris", "Yohji Yamamoto"
@@ -291,9 +319,57 @@ final class PrototypeStore: ObservableObject {
     self.availableQualities = ["Premium", "Mid-range", "Budget", "Handmade", "Sustainable"]
     self.availableCountries = ["Italy", "France", "Japan", "Portugal", "Switzerland", "Germany", "UK", "USA"]
 
-    let boards = [
+    let seededBoards = Self.seedBoards()
+    self.allBoards = seededBoards
+    self.selectedBoardIDs = []
+    self.allProducts = Self.seedProducts(for: seededBoards)
+  }
+
+  private struct RemoteBoardsResponse: Decodable {
+    let boards: [RemoteBoard]
+  }
+
+  private struct RemoteBoard: Decodable {
+    let id: String
+    let name: String
+    let description: String?
+    let imageUrl: String?
+    let pinCount: Int?
+    let privacy: String?
+  }
+
+  private struct RemotePinsResponse: Decodable {
+    let boardId: String?
+    let pins: [RemotePin]
+  }
+
+  private struct RemoteAuthResponse: Decodable {
+    let token: String
+    let user: RemoteAuthUser
+  }
+
+  private struct RemoteAuthUser: Decodable {
+    let id: String
+    let username: String
+    let profileImage: String?
+  }
+
+  private struct OAuthExchangePayload: Encodable {
+    let code: String
+    let state: String
+    let redirectUri: String
+  }
+
+  private struct RemotePin: Decodable {
+    let id: String?
+    let imageUrl: String?
+  }
+
+  private static func seedBoards() -> [Moodboard] {
+    [
       Moodboard(
         id: UUID(),
+        pinterestBoardID: nil,
         name: "Minimal Outfits",
         pinImageURLs: [
           "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=800",
@@ -303,6 +379,7 @@ final class PrototypeStore: ObservableObject {
       ),
       Moodboard(
         id: UUID(),
+        pinterestBoardID: nil,
         name: "Streetwear Looks",
         pinImageURLs: [
           "https://images.unsplash.com/photo-1495121605193-b116b5b09a6b?w=800",
@@ -312,6 +389,7 @@ final class PrototypeStore: ObservableObject {
       ),
       Moodboard(
         id: UUID(),
+        pinterestBoardID: nil,
         name: "Tailored Essentials",
         pinImageURLs: [
           "https://images.unsplash.com/photo-1552374196-c4e7ffc6e126?w=800",
@@ -321,6 +399,7 @@ final class PrototypeStore: ObservableObject {
       ),
       Moodboard(
         id: UUID(),
+        pinterestBoardID: nil,
         name: "Neutral Winter Fits",
         pinImageURLs: [
           "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800",
@@ -330,6 +409,7 @@ final class PrototypeStore: ObservableObject {
       ),
       Moodboard(
         id: UUID(),
+        pinterestBoardID: nil,
         name: "Sneaker Rotation",
         pinImageURLs: [
           "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800",
@@ -338,20 +418,115 @@ final class PrototypeStore: ObservableObject {
         ]
       )
     ]
+  }
 
-    self.allBoards = boards
-    self.selectedBoardIDs = Set(boards.map(\.id))
+  private static func seedProducts(for boards: [Moodboard]) -> [Product] {
+    guard boards.count >= 1 else { return [] }
+    let board = { (index: Int) -> UUID in
+      boards[min(index, boards.count - 1)].id
+    }
 
-    self.allProducts = [
-      Product(id: UUID(), boardID: boards[0].id, title: "Wool Overshirt", brand: "Arket", designer: "Jil Sander", priceCHF: 320, shop: "Arket", isNew: true, recencyBoost: 95),
-      Product(id: UUID(), boardID: boards[1].id, title: "Relaxed Cargo Pant", brand: "COS", designer: "Our Legacy", priceCHF: 420, shop: "COS", isNew: true, recencyBoost: 92),
-      Product(id: UUID(), boardID: boards[2].id, title: "Structured Blazer", brand: "Massimo Dutti", designer: "Lemaire", priceCHF: 790, shop: "Massimo Dutti", isNew: true, recencyBoost: 88),
-      Product(id: UUID(), boardID: boards[3].id, title: "Merino Turtleneck", brand: "Uniqlo", designer: "Helmut Lang", priceCHF: 260, shop: "Uniqlo", isNew: true, recencyBoost: 85),
-      Product(id: UUID(), boardID: boards[4].id, title: "Retro Sneaker", brand: "Zalando", designer: "Prada", priceCHF: 680, shop: "Zalando", isNew: true, recencyBoost: 83),
-      Product(id: UUID(), boardID: boards[0].id, title: "Boxy Tee", brand: "Weekday", designer: "Acne Studios", priceCHF: 210, shop: "Weekday", isNew: true, recencyBoost: 80),
-      Product(id: UUID(), boardID: boards[2].id, title: "Pleated Trouser", brand: "A.P.C.", designer: "Maison Margiela", priceCHF: 560, shop: "A.P.C.", isNew: true, recencyBoost: 78),
-      Product(id: UUID(), boardID: boards[1].id, title: "Tech Shell Jacket", brand: "Carhartt WIP", designer: "Yohji Yamamoto", priceCHF: 640, shop: "Carhartt WIP", isNew: true, recencyBoost: 76)
+    return [
+      Product(id: UUID(), boardID: board(0), title: "Wool Overshirt", brand: "Arket", designer: "Jil Sander", priceCHF: 320, shop: "Arket", isNew: true, recencyBoost: 95),
+      Product(id: UUID(), boardID: board(1), title: "Relaxed Cargo Pant", brand: "COS", designer: "Our Legacy", priceCHF: 420, shop: "COS", isNew: true, recencyBoost: 92),
+      Product(id: UUID(), boardID: board(2), title: "Structured Blazer", brand: "Massimo Dutti", designer: "Lemaire", priceCHF: 790, shop: "Massimo Dutti", isNew: true, recencyBoost: 88),
+      Product(id: UUID(), boardID: board(3), title: "Merino Turtleneck", brand: "Uniqlo", designer: "Helmut Lang", priceCHF: 260, shop: "Uniqlo", isNew: true, recencyBoost: 85),
+      Product(id: UUID(), boardID: board(4), title: "Retro Sneaker", brand: "Zalando", designer: "Prada", priceCHF: 680, shop: "Zalando", isNew: true, recencyBoost: 83),
+      Product(id: UUID(), boardID: board(0), title: "Boxy Tee", brand: "Weekday", designer: "Acne Studios", priceCHF: 210, shop: "Weekday", isNew: true, recencyBoost: 80),
+      Product(id: UUID(), boardID: board(2), title: "Pleated Trouser", brand: "A.P.C.", designer: "Maison Margiela", priceCHF: 560, shop: "A.P.C.", isNew: true, recencyBoost: 78),
+      Product(id: UUID(), boardID: board(1), title: "Tech Shell Jacket", brand: "Carhartt WIP", designer: "Yohji Yamamoto", priceCHF: 640, shop: "Carhartt WIP", isNew: true, recencyBoost: 76)
     ]
+  }
+
+  private func url(path: String) -> URL {
+    apiBaseURL.appendingPathComponent(path)
+  }
+
+  private func loadPinsFromBackend(
+    pinterestBoardID: String,
+    token: String,
+    completion: @escaping ([String]) -> Void
+  ) {
+    var request = URLRequest(url: url(path: "v1/pinterest/boards/\(pinterestBoardID)/pins"))
+    request.httpMethod = "GET"
+    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+    URLSession.shared.dataTask(with: request) { data, response, _ in
+      guard
+        let http = response as? HTTPURLResponse,
+        (200..<300).contains(http.statusCode),
+        let data
+      else {
+        DispatchQueue.main.async {
+          completion([])
+        }
+        return
+      }
+
+      guard let decoded = try? JSONDecoder().decode(RemotePinsResponse.self, from: data) else {
+        DispatchQueue.main.async {
+          completion([])
+        }
+        return
+      }
+
+      let urls = decoded.pins
+        .compactMap(\.imageUrl)
+        .filter { !$0.isEmpty }
+        .prefix(3)
+
+      DispatchQueue.main.async {
+        completion(Array(urls))
+      }
+    }.resume()
+  }
+
+  private func hydrateBoardsWithPinterestPins(
+    _ boards: [Moodboard],
+    token: String,
+    index: Int = 0,
+    hydrated: [Moodboard] = [],
+    completion: @escaping ([Moodboard]) -> Void
+  ) {
+    guard index < boards.count else {
+      completion(hydrated)
+      return
+    }
+
+    let board = boards[index]
+    guard let pinterestBoardID = board.pinterestBoardID else {
+      hydrateBoardsWithPinterestPins(
+        boards,
+        token: token,
+        index: index + 1,
+        hydrated: hydrated + [board],
+        completion: completion
+      )
+      return
+    }
+
+    loadPinsFromBackend(pinterestBoardID: pinterestBoardID, token: token) { pinImageURLs in
+      let nextBoard: Moodboard
+      if pinImageURLs.isEmpty {
+        nextBoard = board
+      } else {
+        nextBoard = Moodboard(
+          id: board.id,
+          pinterestBoardID: board.pinterestBoardID,
+          name: board.name,
+          pinImageURLs: pinImageURLs
+        )
+      }
+
+      self.hydrateBoardsWithPinterestPins(
+        boards,
+        token: token,
+        index: index + 1,
+        hydrated: hydrated + [nextBoard],
+        completion: completion
+      )
+    }
   }
 
   var filteredBoards: [Moodboard] {
@@ -427,6 +602,218 @@ final class PrototypeStore: ObservableObject {
   }
 
   func connectPinterest() {
+    if isConnectingPinterest { return }
+    isConnectingPinterest = true
+    connectError = nil
+
+    let configuredRedirect =
+      (Bundle.main.object(forInfoDictionaryKey: "PinterestRedirectURI") as? String)?
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let redirectURL =
+      (configuredRedirect?.isEmpty == false)
+      ? configuredRedirect!
+      : "stylematch://auth"
+
+    guard
+      let redirectComponents = URLComponents(string: redirectURL),
+      let redirectScheme = redirectComponents.scheme,
+      !redirectScheme.isEmpty
+    else {
+      connectError = "Invalid Pinterest redirect URI configuration."
+      isConnectingPinterest = false
+      return
+    }
+
+    guard var components = URLComponents(url: url(path: "v1/auth/pinterest"), resolvingAgainstBaseURL: false) else {
+      connectError = "Invalid backend URL."
+      isConnectingPinterest = false
+      return
+    }
+
+    components.queryItems = [URLQueryItem(name: "redirect", value: redirectURL)]
+    guard let authURL = components.url else {
+      connectError = "Failed to build OAuth URL."
+      isConnectingPinterest = false
+      return
+    }
+
+    let session = ASWebAuthenticationSession(url: authURL, callbackURLScheme: redirectScheme) { [weak self] callbackURL, error in
+      guard let self else { return }
+      DispatchQueue.main.async {
+        if let error {
+          let nsError = error as NSError
+          if nsError.domain == ASWebAuthenticationSessionError.errorDomain &&
+            nsError.code == ASWebAuthenticationSessionError.canceledLogin.rawValue
+          {
+            self.connectError = "Login cancelled. If Pinterest showed redirect URI error, register: \(redirectURL)"
+          } else {
+            self.connectError = error.localizedDescription
+          }
+          self.isConnectingPinterest = false
+          return
+        }
+
+        guard let callbackURL else {
+          self.connectError = "Pinterest login was cancelled."
+          self.isConnectingPinterest = false
+          return
+        }
+
+        guard let callbackComponents = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false) else {
+          self.connectError = "Invalid callback URL."
+          self.isConnectingPinterest = false
+          return
+        }
+
+        let params = Dictionary(uniqueKeysWithValues: (callbackComponents.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        if let authError = params["error"], !authError.isEmpty {
+          self.connectError = authError
+          self.isConnectingPinterest = false
+          return
+        }
+
+        guard let token = params["token"], !token.isEmpty else {
+          let code = params["code"] ?? ""
+          let state = params["state"] ?? ""
+          if !code.isEmpty, !state.isEmpty {
+            self.exchangeOAuthCode(code: code, state: state, redirectUri: redirectURL)
+            return
+          }
+          self.connectError = "Pinterest login incomplete (missing token/code)."
+          self.isConnectingPinterest = false
+          return
+        }
+
+        self.authToken = token
+        self.authUsername = params["username"]
+        self.loadBoardsFromBackend(token: token)
+      }
+    }
+
+    session.presentationContextProvider = OAuthPresentationContextProvider.shared
+    session.prefersEphemeralWebBrowserSession = false
+    oauthSession = session
+
+    if !session.start() {
+      connectError = "Could not open Pinterest login."
+      isConnectingPinterest = false
+    }
+  }
+
+  private func loadBoardsFromBackend(token: String) {
+    var request = URLRequest(url: url(path: "v1/pinterest/boards"))
+    request.httpMethod = "GET"
+    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+    URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+      guard let self else { return }
+
+      DispatchQueue.main.async {
+        defer { self.isConnectingPinterest = false }
+
+        if let error {
+          self.connectError = "Failed to load boards: \(error.localizedDescription)"
+          return
+        }
+
+        guard let http = response as? HTTPURLResponse else {
+          self.connectError = "No server response."
+          return
+        }
+
+        guard (200..<300).contains(http.statusCode), let data else {
+          let serverMessage = data.flatMap { String(data: $0, encoding: .utf8) } ?? "HTTP \(http.statusCode)"
+          self.connectError = "Failed to load boards: \(serverMessage)"
+          return
+        }
+
+        do {
+          let decoded = try JSONDecoder().decode(RemoteBoardsResponse.self, from: data)
+          let mapped = decoded.boards.map { board in
+            Moodboard(
+              id: UUID(),
+              pinterestBoardID: board.id,
+              name: board.name,
+              pinImageURLs: [
+                board.imageUrl ?? "https://picsum.photos/seed/\(board.id)/1200/1800?grayscale"
+              ]
+            )
+          }
+
+          guard !mapped.isEmpty else {
+            self.connectError = "No Pinterest moodboards found."
+            return
+          }
+
+          self.hydrateBoardsWithPinterestPins(mapped, token: token) { hydratedBoards in
+            self.allBoards = hydratedBoards
+            self.selectedBoardIDs = []
+            self.boardSearch = ""
+            self.allProducts = Self.seedProducts(for: hydratedBoards)
+            self.setupStep = .boards
+          }
+        } catch {
+          self.connectError = "Could not parse Pinterest boards."
+        }
+      }
+    }.resume()
+  }
+
+  private func exchangeOAuthCode(code: String, state: String, redirectUri: String) {
+    var request = URLRequest(url: url(path: "v1/auth/pinterest/exchange"))
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+    do {
+      let payload = OAuthExchangePayload(code: code, state: state, redirectUri: redirectUri)
+      request.httpBody = try JSONEncoder().encode(payload)
+    } catch {
+      connectError = "Failed to prepare OAuth exchange."
+      isConnectingPinterest = false
+      return
+    }
+
+    URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+      guard let self else { return }
+      DispatchQueue.main.async {
+        if let error {
+          self.connectError = "OAuth exchange failed: \(error.localizedDescription)"
+          self.isConnectingPinterest = false
+          return
+        }
+
+        guard let http = response as? HTTPURLResponse else {
+          self.connectError = "No server response during OAuth exchange."
+          self.isConnectingPinterest = false
+          return
+        }
+
+        guard (200..<300).contains(http.statusCode), let data else {
+          let serverMessage = data.flatMap { String(data: $0, encoding: .utf8) } ?? "HTTP \(http.statusCode)"
+          self.connectError = "OAuth exchange failed: \(serverMessage)"
+          self.isConnectingPinterest = false
+          return
+        }
+
+        do {
+          let decoded = try JSONDecoder().decode(RemoteAuthResponse.self, from: data)
+          self.authToken = decoded.token
+          self.authUsername = decoded.user.username
+          self.loadBoardsFromBackend(token: decoded.token)
+        } catch {
+          self.connectError = "OAuth exchange response invalid."
+          self.isConnectingPinterest = false
+        }
+      }
+    }.resume()
+  }
+
+  func skipPinterestLogin() {
+    connectError = nil
+    authToken = "__demo__"
+    authUsername = "Demo user"
     setupStep = .boards
   }
 
@@ -475,6 +862,13 @@ final class PrototypeStore: ObservableObject {
     boughtProductIDs = []
     likedProductIDs = []
     dislikedProductIDs = []
+    authToken = nil
+    authUsername = nil
+    connectError = nil
+    isConnectingPinterest = false
+    let seededBoards = Self.seedBoards()
+    allBoards = seededBoards
+    allProducts = Self.seedProducts(for: seededBoards)
   }
 
   func boardName(for boardID: UUID) -> String {
@@ -690,7 +1084,7 @@ struct BoardSettingsView: View {
           .foregroundStyle(StyleTheme.textSecondary)
 
         Text("Brand")
-          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
+          .styleMatchH3()
         HStack {
           TextField("Add brand", text: $customBrandName)
             .textFieldStyle(.roundedBorder)
@@ -712,7 +1106,7 @@ struct BoardSettingsView: View {
         }
 
         Text("Designer")
-          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
+          .styleMatchH3()
         HStack {
           TextField("Add designer", text: $customDesignerName)
             .textFieldStyle(.roundedBorder)
@@ -734,12 +1128,20 @@ struct BoardSettingsView: View {
         }
 
         Text("Price")
-          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
-        Text("CHF \(Int(store.priceMin(for: board.id))) - \(Int(store.priceMax(for: board.id)))")
-          .font(.subheadline)
-          .bold()
-          .foregroundStyle(StyleTheme.textPrimary)
+          .styleMatchH3()
         VStack(alignment: .leading, spacing: 8) {
+          Rectangle()
+            .fill(StyleTheme.tableStroke)
+            .frame(height: 1)
+          HStack {
+            Text("CHF \(Int(store.priceMin(for: board.id)))")
+              .font(.system(size: 15, weight: .bold))
+              .foregroundStyle(StyleTheme.textPrimary)
+            Spacer()
+            Text("CHF \(Int(store.priceMax(for: board.id)))")
+              .font(.system(size: 15, weight: .bold))
+              .foregroundStyle(StyleTheme.textPrimary)
+          }
           Text("From")
             .font(.system(size: 14, weight: .bold))
             .foregroundStyle(StyleTheme.textSecondary)
@@ -767,10 +1169,13 @@ struct BoardSettingsView: View {
             step: 10
           )
           .tint(.white)
+          Rectangle()
+            .fill(StyleTheme.tableStroke)
+            .frame(height: 1)
         }
 
         Text("Quality")
-          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
+          .styleMatchH3()
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
           ForEach(store.availableQualities, id: \.self) { quality in
             settingsChip(
@@ -783,7 +1188,7 @@ struct BoardSettingsView: View {
         }
 
         Text("Country of origin")
-          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
+          .styleMatchH3()
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
           ForEach(store.availableCountries, id: \.self) { country in
             settingsChip(
@@ -830,8 +1235,7 @@ struct BoardDetailView: View {
       VStack(spacing: 0) {
         VStack(alignment: .leading, spacing: 10) {
           Text("Pinterest liked pins")
-            .font(.custom("RuderPlakatLLTrialTT-Regular", size: 36))
-            .foregroundStyle(StyleTheme.textPrimary)
+            .styleMatchH3()
           categoryTabs
         }
         .padding(.horizontal, 16)
@@ -888,8 +1292,7 @@ struct BoardDetailView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 12) {
         Text("Pinterest-like pins")
-          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 34))
-          .foregroundStyle(StyleTheme.textPrimary)
+          .styleMatchH3()
         Text("Swipe left for purchases, swipe left again for settings.")
           .font(.caption)
           .foregroundStyle(StyleTheme.textSecondary)
@@ -916,8 +1319,7 @@ struct BoardDetailView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 10) {
         Text("Purchases for this moodboard")
-          .font(.custom("RuderPlakatLLTrialTT-Regular", size: 34))
-          .foregroundStyle(StyleTheme.textPrimary)
+          .styleMatchH3()
         let bought = store.boughtProducts(for: board)
         if bought.isEmpty {
           Text("No purchases for this moodboard yet.")
@@ -1063,18 +1465,41 @@ struct PrototypeRootView: View {
       Button {
         store.connectPinterest()
       } label: {
-        editorialActionLabel("Connect Pinterest")
+        editorialActionLabel(store.isConnectingPinterest ? "Connecting..." : "Connect Pinterest")
+      }
+      .buttonStyle(.plain)
+      .disabled(store.isConnectingPinterest)
+
+      Button {
+        store.skipPinterestLogin()
+      } label: {
+        Text("Continue without Pinterest login")
+          .font(.system(size: 16, weight: .regular))
+          .underline()
+          .foregroundStyle(StyleTheme.textSecondary)
       }
       .buttonStyle(.plain)
 
+      if store.isConnectingPinterest {
+        ProgressView()
+          .tint(StyleTheme.textPrimary)
+      }
+
+      if let username = store.authUsername, !username.isEmpty {
+        Text("Connected as \(username)")
+          .font(.caption)
+          .foregroundStyle(StyleTheme.textSecondary)
+      }
+
+      if let error = store.connectError, !error.isEmpty {
+        Text(error)
+          .font(.caption)
+          .foregroundStyle(Color.red)
+      }
+
     case .boards:
       Text("Select moodboard")
-        .font(.custom("RuderPlakatLLTrialTT-Regular", size: 126))
-        .lineSpacing(63)
-        .tracking(0.6)
-        .lineLimit(2)
-        .minimumScaleFactor(0.25)
-        .foregroundStyle(StyleTheme.textPrimary)
+        .styleMatchH1()
       TextField("Search board name", text: $store.boardSearch)
         .textFieldStyle(.roundedBorder)
 
@@ -1101,13 +1526,6 @@ struct PrototypeRootView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(8)
             .background(Color.clear)
-            .overlay(
-              Rectangle()
-                .stroke(
-                  StyleTheme.tileStroke,
-                  style: StrokeStyle(lineWidth: isSelected ? 2 : 1, lineCap: .butt, lineJoin: .miter, dash: [28, 16], dashPhase: 1)
-                )
-            )
             .punkTexture(0.3)
           }
           .buttonStyle(.plain)
@@ -1159,12 +1577,7 @@ struct PrototypeRootView: View {
             .foregroundStyle(StyleTheme.textSecondary)
 
           Text(title)
-            .font(.custom("RuderPlakatLLTrialTT-Regular", size: 126))
-            .lineSpacing(63)
-            .tracking(0.9)
-            .lineLimit(2)
-            .minimumScaleFactor(0.25)
-            .foregroundStyle(StyleTheme.textPrimary)
+            .styleMatchH1()
 
           Text(description)
             .font(.body)
@@ -1209,12 +1622,7 @@ struct PrototypeRootView: View {
   private func setupHeroSection(title: String, imageLabel: String, description: String) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       Text(title)
-        .font(.custom("RuderPlakatLLTrialTT-Regular", size: 126))
-        .lineSpacing(63)
-        .tracking(0.6)
-        .lineLimit(2)
-        .minimumScaleFactor(0.25)
-        .foregroundStyle(StyleTheme.textPrimary)
+        .styleMatchH1()
       WireframeImageBlock(height: 190, cornerRadius: 0, label: imageLabel)
       Text(description)
         .font(.body)
@@ -1308,8 +1716,7 @@ struct PrototypeRootView: View {
   @ViewBuilder
   private var boardFilterBar: some View {
     Text("Moodboard Filter")
-      .font(.custom("RuderPlakatLLTrialTT-Regular", size: 30))
-      .foregroundStyle(StyleTheme.textPrimary)
+      .styleMatchH3()
     ScrollView(.horizontal) {
       HStack(spacing: 8) {
         let allIsActive = store.activeBoardFilter == nil
@@ -1360,8 +1767,7 @@ struct PrototypeRootView: View {
   @ViewBuilder
   private var moodboardsTab: some View {
     Text("Pinterest Moodboards")
-      .font(.custom("RuderPlakatLLTrialTT-Regular", size: 40))
-      .foregroundStyle(StyleTheme.textPrimary)
+      .styleMatchH3()
     Text("All selected moodboards with visual covers. Open one to see pins and bought items.")
       .font(.caption)
       .foregroundStyle(StyleTheme.textSecondary)
@@ -1556,8 +1962,7 @@ struct ProductDetailSheetView: View {
           .background(Color.clear)
 
           Text("Buy now")
-            .font(.custom("RuderPlakatLLTrialTT-Regular", size: 38))
-            .foregroundStyle(StyleTheme.textPrimary)
+            .styleMatchH3()
 
           Button("Buy now") {
             // Placeholder: in MVP this opens the product in store with selected size.
@@ -1613,6 +2018,7 @@ struct ProductDetailSheetView: View {
           Button("Done") { store.selectedProduct = nil }
             .font(.system(size: 16, weight: .bold))
             .foregroundStyle(StyleTheme.textPrimary)
+            .buttonStyle(.plain)
         }
       }
     }
