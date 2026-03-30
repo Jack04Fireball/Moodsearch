@@ -809,9 +809,6 @@ struct BoardSettingsView: View {
             .textInputAutocapitalization(.words)
             .autocorrectionDisabled(true)
             .padding(.vertical, 6)
-            .overlay(alignment: .bottom) {
-              Rectangle().fill(StyleTheme.border).frame(height: 1)
-            }
           Button("Add") {
             store.addCustomBrand(for: board.id, name: customBrandName)
             customBrandName = ""
@@ -838,9 +835,6 @@ struct BoardSettingsView: View {
             .textInputAutocapitalization(.words)
             .autocorrectionDisabled(true)
             .padding(.vertical, 6)
-            .overlay(alignment: .bottom) {
-              Rectangle().fill(StyleTheme.border).frame(height: 1)
-            }
           Button("Add") {
             store.addCustomDesigner(for: board.id, name: customDesignerName)
             customDesignerName = ""
@@ -1128,10 +1122,10 @@ struct PrototypeRootView: View {
     case .intro1:
       introPosterScreen(
         posterIndex: "01 / 03",
-        title: "CURATE",
+        title: "Curate",
         imageLabel: "Intro Poster I",
         description: "Find products that match your Pinterest style and create your own visual direction.",
-        actionTitle: "NEXT"
+        actionTitle: "Next"
       ) {
         store.nextIntroStep()
       }
@@ -1139,10 +1133,10 @@ struct PrototypeRootView: View {
     case .intro2:
       introPosterScreen(
         posterIndex: "02 / 03",
-        title: "FOCUS",
+        title: "Focus",
         imageLabel: "Intro Poster II",
         description: "Use moodboard-based focus so the feed ranks what fits your aesthetic first.",
-        actionTitle: "NEXT"
+        actionTitle: "Next"
       ) {
         store.nextIntroStep()
       }
@@ -1150,10 +1144,10 @@ struct PrototypeRootView: View {
     case .intro3:
       introPosterScreen(
         posterIndex: "03 / 03",
-        title: "MATCH",
+        title: "Match",
         imageLabel: "Intro Poster III",
         description: "Open high-match offers and move faster from inspiration to buying.",
-        actionTitle: "CONTINUE TO LOGIN"
+        actionTitle: "Continue to login"
       ) {
         store.nextIntroStep()
       }
@@ -1208,9 +1202,6 @@ struct PrototypeRootView: View {
         .textInputAutocapitalization(.never)
         .autocorrectionDisabled(true)
         .padding(.vertical, 8)
-        .overlay(alignment: .bottom) {
-          Rectangle().fill(StyleTheme.border).frame(height: 1)
-        }
 
       LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
         ForEach(store.filteredBoards) { board in
@@ -1266,42 +1257,62 @@ struct PrototypeRootView: View {
     action: @escaping () -> Void
   ) -> some View {
     GeometryReader { proxy in
-      ZStack(alignment: .bottomLeading) {
+      ZStack(alignment: .topLeading) {
         WireframeImageBlock(height: proxy.size.height, label: imageLabel)
           .frame(maxWidth: .infinity, maxHeight: .infinity)
           .clipped()
 
-        VStack(alignment: .leading, spacing: 12) {
-          Text(posterIndex)
-            .font(StyleTheme.bodyFont(12, weight: .semibold))
-            .tracking(2.2)
-            .foregroundStyle(StyleTheme.textSecondary)
-
+        VStack(alignment: .leading, spacing: 0) {
           Text(title)
-            .font(StyleTheme.titleFont(StyleTheme.posterH1Size))
+            .font(StyleTheme.titleFont(132))
             .lineSpacing(StyleTheme.posterH1LineSpacing)
-            .tracking(0.9)
-            .lineLimit(2)
+            .tracking(0.2)
+            .lineLimit(1)
             .minimumScaleFactor(0.25)
             .foregroundStyle(StyleTheme.h1Gradient)
 
+          Text(posterIndex)
+            .font(StyleTheme.bodyFont(12, weight: .semibold))
+            .tracking(1.4)
+            .foregroundStyle(StyleTheme.textSecondary)
+        }
+        .padding(.leading, 18)
+        .padding(.top, 18)
+
+        VStack(alignment: .leading, spacing: 12) {
           Text(description)
             .font(StyleTheme.bodyFont(17))
             .foregroundStyle(StyleTheme.textSecondary)
-            .lineSpacing(4)
+            .lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 4)
-
           Button {
             action()
           } label: {
             editorialActionLabel(actionTitle)
           }
           .buttonStyle(.plain)
-          .padding(.top, 6)
         }
         .padding(.horizontal, 18)
         .padding(.bottom, 28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+
+        Text(title)
+          .font(StyleTheme.titleFont(54))
+          .foregroundStyle(StyleTheme.textTertiary.opacity(0.34))
+          .tracking(0.2)
+          .rotationEffect(.degrees(-90))
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+          .offset(x: 36, y: -20)
+          .allowsHitTesting(false)
+
+        Text("Stylematch")
+          .font(StyleTheme.bodyFont(14))
+          .foregroundStyle(StyleTheme.textTertiary)
+          .tracking(0.8)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+          .padding(.trailing, 18)
+          .padding(.bottom, 18)
+          .allowsHitTesting(false)
       }
       .frame(width: proxy.size.width, height: proxy.size.height)
       .punkTexture(0.34)
@@ -1311,9 +1322,9 @@ struct PrototypeRootView: View {
 
   private func editorialActionLabel(_ title: String) -> some View {
     HStack(spacing: 10) {
-      Text(title.uppercased())
+      Text(title)
         .font(StyleTheme.titleFont(20))
-        .tracking(1.1)
+        .tracking(0.4)
       Image(systemName: "arrow.right")
         .font(.system(size: 15, weight: .semibold))
     }
@@ -1362,17 +1373,8 @@ struct PrototypeRootView: View {
   }
 
   private var stickyTabHeader: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text(title(for: store.mainTab))
-        .font(StyleTheme.titleFont(StyleTheme.appHeaderH1Size))
-        .lineSpacing(8)
-        .tracking(0.9)
-        .lineLimit(1)
-        .minimumScaleFactor(0.45)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .foregroundStyle(StyleTheme.h1Gradient)
-
-      HStack(spacing: 12) {
+    VStack(alignment: .leading, spacing: 4) {
+      HStack(spacing: 4) {
         ForEach([MainTab.home, MainTab.moodboards, MainTab.archive], id: \.self) { tab in
           secondaryTabButton(tab: tab, isActive: store.mainTab == tab) {
             store.mainTab = tab
@@ -1389,12 +1391,14 @@ struct PrototypeRootView: View {
 
   private func secondaryTabButton(tab: MainTab, isActive: Bool, action: @escaping () -> Void) -> some View {
     return Button(action: action) {
-      Text(title(for: tab).uppercased())
-        .font(StyleTheme.bodyFont(18, weight: isActive ? .semibold : .regular))
-        .tracking(1.1)
+      Text(title(for: tab))
+        .font(StyleTheme.bodyFont(15, weight: isActive ? .semibold : .regular))
+        .tracking(0.2)
         .foregroundStyle(isActive ? StyleTheme.textPrimary : StyleTheme.textSecondary)
         .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.vertical, 4)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+        .padding(.vertical, 4)
     }
     .buttonStyle(.plain)
   }
@@ -1527,7 +1531,7 @@ struct PrototypeRootView: View {
         .frame(width: visualWidth, alignment: .leading)
 
         VStack(alignment: .leading, spacing: 4) {
-          Text(store.likedProductIDs.contains(product.id) ? "LIKED" : "NEW")
+          Text(store.likedProductIDs.contains(product.id) ? "Liked" : "New")
             .font(StyleTheme.titleFont(13))
             .foregroundStyle(store.likedProductIDs.contains(product.id) ? StyleTheme.accentBright : StyleTheme.badgeNeutral)
           HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -1642,24 +1646,12 @@ struct ProductDetailSheetView: View {
             .font(StyleTheme.bodyFont(16))
             .foregroundStyle(StyleTheme.textSecondary)
 
-          VStack(spacing: 0) {
-            Divider()
-              .overlay(StyleTheme.border)
+          VStack(alignment: .leading, spacing: 2) {
             infoRow(title: "Price", value: "CHF \(product.priceCHF)")
-            Divider()
-              .overlay(StyleTheme.border)
             infoRow(title: "Brand", value: product.brand)
-            Divider()
-              .overlay(StyleTheme.border)
             infoRow(title: "Designer", value: product.designer)
-            Divider()
-              .overlay(StyleTheme.border)
             infoRow(title: "Shop", value: product.shop)
-            Divider()
-              .overlay(StyleTheme.border)
             infoRow(title: "Moodboard", value: store.boardName(for: product.boardID))
-            Divider()
-              .overlay(StyleTheme.border)
           }
 
           Text("Buy now")
